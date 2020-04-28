@@ -1,0 +1,9 @@
+sphinx
+numpy
+shapely
+networkx
+Rtree
+trimesh
+scikit-image
+cython
+

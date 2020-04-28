@@ -1,0 +1,9 @@
+sphinx
+numpy
+Rtree
+networkx
+trimesh
+autodocsumm
+pypandoc
+sphinx-automodapi
+sphinx-autodoc-typehints
