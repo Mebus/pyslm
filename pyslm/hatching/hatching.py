@@ -589,99 +589,52 @@ class Hatcher(BaseHatcher):
 
         return layer
 
+
 class StripeHatcher(Hatcher):
+    """
+    The Stripe Hatcher extends the standard Hatcher but generates a set of stripe hatches of a fixed width to cover a region.
+    This a common scan strategy adopted by users of EOS systems. This has the effect of limiting the max length of the scan vectors
+    across a region in order to mitigate the effects of residual stress. """
 
     def __init__(self):
+
+        super().__init__()
+
         self._stripeWidth = 5.0
+        self._stripeOverlap = 0.1
+        self._stripeOffset = 0.5
+
+    def __str__(self):
+        return 'StripeHatcher'
 
     @property
     def stripeWidth(self) -> float:
+        """ The stripe width """
         return self._stripeWidth
 
     @stripeWidth.setter
     def stripeWidth(self, width):
         self._stripeWidth = width
 
-    def hatch(self, boundaryFeature):
+    @property
+    def stripeOverlap(self) -> float:
+        """ The length of overlap between adjacent stripes"""
+        return self._stripeOverlap
 
-        layer = Layer(0.0)
-        # First generate a boundary with the spot compensation applied
+    @stripeOverlap.setter
+    def stripeOverlap(self, overlap:float):
+        self._stripeOverlap = overlap
 
-        offsetDelta = 0.0
-        offsetDelta -= self._spotCompensation
+    @property
+    def stripeOffset(self):
+        """ The stripe offset is the relative distance (hatch spacing) to move the scan vectors between adjacent stripes"""
+        return self._stripeOffset
 
-        for i in range(self._numOuterContours):
-            offsetDelta -= self._contourOffset
-            offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
+    @stripeOffset.setter
+    def stripeOffset(self, offset: float):
+        self._stripeOffset = offset
 
-            for poly in offsetBoundary:
-                for path in poly:
-                    contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)
-                    contourGeometry.type = "outer"
-                    layer.contours.append(contourGeometry)  # Append to the layer
-
-        # Repeat for inner contours
-        for i in range(self._numInnerContours):
-
-            offsetDelta -= self._contourOffset
-            offsetBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
-
-            for poly in offsetBoundary:
-                for path in poly:
-                    contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)
-                    contourGeometry.type = "inner"
-                    layer.contours.append(contourGeometry)  # Append to the layer
-
-        # The final offset is applied to the boundary
-
-        offsetDelta -= self._volOffsetHatch
-
-        curBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
-
-        scanVectors = []
-        scanVectorMidpoints = []
-
-        # Iterate through each closed polygon region in the slice. The currently individually sliced.
-        for contour in curBoundary:
-            # print('{:=^60} \n'.format(' Generating hatches '))
-
-            paths = contour
-
-
-            # Hatch angle will change per layer
-            # TODO change the layer angle increment
-            layerHatchAngle = np.mod(self._hatchAngle + self._layerAngleIncrement, 180)
-
-            # The layer hatch angle needs to be bound by +ve X vector (i.e. -90 < theta_h < 90 )
-            if layerHatchAngle > 90:
-                layerHatchAngle = layerHatchAngle - 180
-
-            # Generate the un-clipped hatch regions based on the layer hatchAngle and hatch distance
-            hatches = self.generateHatching(paths, self._hatchDistance, layerHatchAngle)
-
-            # Clip the hatch fill to the boundary
-            clippedPaths = self.clipLines(paths, hatches)
-
-            # Merge the lines together
-            if len(clippedPaths) == 0:
-                continue
-
-            clippedLines = np.transpose(np.dstack(clippedPaths), axes=[2, 0, 1])
-
-            scanVectors.append(clippedLines)
-
-            hatchVectors = np.vstack(scanVectors)
-            # Construct a HatchGeometry containg the list of points
-            hatchGeom = HatchGeometry()
-            hatchGeom.coords = hatchVectors
-
-            layer.hatches.append(hatchGeom)
-
-        return layer
-
-    def generateStripeHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
+    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
         """
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
         of the polygon bounding box
@@ -693,13 +646,13 @@ class StripeHatcher(Hatcher):
         :return: Returns the list of unclipped scan vectors
 
         """
-
         # Hatch angle
         theta_h = np.radians(hatchAngle)  # 'rad'
 
         # Get the bounding box of the paths
         bbox = self.polygonBoundingBox(paths)
 
+        print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 
@@ -707,66 +660,40 @@ class StripeHatcher(Hatcher):
         diagonal = bbox[2:] - bboxCentre
         bboxRadius = np.sqrt(diagonal.dot(diagonal))
 
-        # Construct a square which wraps the radius
-        x = np.tile(np.arange(-bboxRadius, bboxRadius, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
-        y = np.array([-bboxRadius, bboxRadius]);
-        y = np.resize(y, x.shape)
+        numStripes = int(2 * bboxRadius / self._stripeWidth)+1
 
-        coords = np.hstack([x.reshape(-1, 1),
-                            y.reshape(-1, 1)]);
+        # Construct a square which wraps the radius
+        hatchOrder = 0
+        coords = []
+        for i in np.arange(0,numStripes):
+            startX = -bboxRadius + i * (self._stripeWidth) - self._stripeOverlap
+            endX = startX + (self._stripeWidth) + self._stripeOverlap
+
+            y = np.tile(np.arange(-bboxRadius + np.mod(i,2) * self._stripeOffset*hatchSpacing,
+                                  bboxRadius + np.mod(i,2) * self._stripeOffset*hatchSpacing, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
+            #x = np.tile(np.arange(startX, endX, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
+            x = np.array([startX, endX])
+            x = np.resize(x, y.shape)
+            z = np.arange(hatchOrder, hatchOrder + y.shape[0] / 2, 0.5).astype(np.int64)
+
+            hatchOrder += x.shape[0] / 2
+
+            coords += [ np.hstack([x.reshape(-1, 1),
+                                y.reshape(-1, 1),
+                                z.reshape(-1, 1)]) ]
+
+        coords = np.vstack(coords)
+
+
 
         # Create the rotation matrix
         c, s = np.cos(theta_h), np.sin(theta_h)
-        R = np.array([(c, -s),
-                      (s, c)])
+        R = np.array([(c, -s, 0),
+                      (s, c, 0),
+                      (0, 0, 1.0)])
 
         # Apply the rotation matrix and translate to bounding box centre
         coords = np.matmul(R, coords.T)
-        coords = coords.T + bboxCentre
-
-        return coords
-
-    def generateCheckerHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
-        """
-        Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
-        of the polygon bounding box
-
-        :param paths:
-        :param hatchSpacing: Hatch Spacing to use
-        :param hatchAngle: Hatch angle (degrees) to rotate the scan vectors
-
-        :return: Returns the list of unclipped scan vectors
-
-        """
-
-        # Hatch angle
-        theta_h = np.radians(hatchAngle)  # 'rad'
-
-        # Get the bounding box of the paths
-        bbox = self.polygonBoundingBox(paths)
-
-        # Expand the bounding box
-        bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
-
-        # Calculates the diagonal length for which is the longest
-        diagonal = bbox[2:] - bboxCentre
-        bboxRadius = np.sqrt(diagonal.dot(diagonal))
-
-        # Construct a square which wraps the radius
-        x = np.tile(np.arange(-bboxRadius, bboxRadius, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
-        y = np.array([-bboxRadius, bboxRadius]);
-        y = np.resize(y, x.shape)
-
-        coords = np.hstack([x.reshape(-1, 1),
-                            y.reshape(-1, 1)]);
-
-        # Create the rotation matrix
-        c, s = np.cos(theta_h), np.sin(theta_h)
-        R = np.array([(c, -s),
-                      (s, c)])
-
-        # Apply the rotation matrix and translate to bounding box centre
-        coords = np.matmul(R, coords.T)
-        coords = coords.T + bboxCentre
+        coords = coords.T + np.hstack([bboxCentre, 0.0])
 
         return coords
