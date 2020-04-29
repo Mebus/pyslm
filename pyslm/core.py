@@ -5,6 +5,7 @@ import trimesh
 from abc import ABC
 from typing import Any, List, Tuple
 
+
 class DocumentObject(ABC):
 
     def __init__(self, name):

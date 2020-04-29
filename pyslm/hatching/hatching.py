@@ -1,12 +1,14 @@
 import pyclipper
 import numpy as np
 
+import abc
+from typing import Any, Tuple, List
 from skimage.measure import approximate_polygon, subdivide_polygon
 
 from ..geometry import LayerGeometry, ContourGeometry, HatchGeometry, Layer
 
 
-class BaseHatcher:
+class BaseHatcher(abc.ABC):
 
     PYCLIPPER_SCALEFACTOR = 1e4
     """ 
@@ -35,7 +37,19 @@ class BaseHatcher:
         return 1./cls.PYCLIPPER_SCALEFACTOR
 
     @staticmethod
-    def plot(layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, handle=None):
+    def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows = False, plotOrderLine = False, handle=None) -> None:
+        """
+        Plots the all the scan vectors and point exposures in the Layer Geometry which includes the
+        :param layer: The Layer containing the Layer Geometry
+        :param zPos: The position of the layer when using the 3D plot (optional)
+        :param plotContours: Plots the inner hatch scan vectors
+        :param plotHatches: Plots the hatch scan vectors
+        :param plotPoints: Plots point exposures
+        :param plot3D: Plots the layer in 3D
+        :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of matplotlib annotations, should be disabled for large datasets
+        :param plotOrderLine: Plots an additional line showing the order of vecctor scanning
+        :param handle: Matplotlib handle to re-use
+        """
 
         import matplotlib.pyplot as plt
         import matplotlib.colors
@@ -66,13 +80,29 @@ class BaseHatcher:
                 lc = mc.LineCollection(hatches,
                                        colors=plt.cm.rainbow(plotNormalize(np.arange(len(hatches)))),
                                        linewidths=0.5)
+
+                if plotArrows and not plot3D:
+                    for hatch in hatches:
+                        midPoint = np.mean(hatch, axis=0)
+                        delta = hatch[1,:] - hatch[0,:]
+
+                        plt.annotate('',
+                                     xytext=midPoint-delta*1e-4,
+                                     xy=midPoint,
+                                     arrowprops={'arrowstyle' : "->",'facecolor': 'black'})
+
                 if plot3D:
                     ax.add_collection3d(lc, zs=zPos)
-                else:
+
+                if not plot3D and plotOrderLine:
                     ax.add_collection(lc)
                     midPoints = np.mean(hatches, axis=1)
                     idx6 = np.arange(len(hatches))
                     ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
+
+                ax.add_collection(lc)
+
+
 
         if plotContours:
             for contourGeom in layer.contours:
@@ -86,6 +116,16 @@ class BaseHatcher:
                 else:
                     lineColor = 'k';
                     lineWidth = 0.7
+
+                if plotArrows and not plot3D:
+                    for i in range(contourGeom.coords.shape[0]-1):
+                        midPoint = np.mean(contourGeom.coords[i:i+2], axis=0)
+                        delta = contourGeom.coords[i+1, :] - contourGeom.coords[i, :]
+
+                        plt.annotate('',
+                                     xytext=midPoint - delta * 1e-4,
+                                     xy=midPoint,
+                                     arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
 
                 if plot3D:
                     ax.plot(contourGeom.coords[:, 0], contourGeom.coords[:, 1], zs=zPos, color=lineColor,
@@ -268,6 +308,19 @@ class BaseHatcher:
         coords = coords.T + np.hstack([bboxCentre, 0.0])
 
         return coords
+
+    def clipperToHatchArray(self, coords: np.ndarray) -> np.ndarray:
+        """
+        A helper method which converts the raw line lists from pyclipper into a array
+
+        :param coords: The list of hatches generated from pyclipper
+        """
+        return np.transpose(np.dstack(coords), axes=[2, 0, 1])
+
+    @abc.abstractmethod
+    def hatch(self,boundaryFeature):
+        raise NotImplementedError()
+
 if False:
 
     class InnerHatchRegion(BaseHatcher):
@@ -310,9 +363,6 @@ class Hatcher(BaseHatcher):
     def __init__(self):
 
         # TODO check that the polygon boundary feature type
-
-        # Hatch parametrs
-
         # Contour information
         self._numInnerContours = 1
         self._numOuterContours = 1
@@ -332,23 +382,31 @@ class Hatcher(BaseHatcher):
     """
 
     @property
-    def hatchDistance(self):
+    def hatchDistance(self) -> float:
+        """
+        The distance between hatch scan vectors.
+        """
         return self._hatchDistance
 
     @hatchDistance.setter
-    def hatchDistance(self, value):
+    def hatchDistance(self, value: float):
         self._hatchDistance = value
 
     @property
-    def hatchAngle(self):
+    def hatchAngle(self) -> float:
+        """ The base hatch angle used for hatching the region in degrees [-180,180]."""
         return self._hatchAngle
 
     @hatchAngle.setter
-    def hatchAngle(self, value):
+    def hatchAngle(self, value: float):
         self._hatchAngle = value
 
     @property
     def layerAngleIncrement(self):
+        """
+        An additional offset used to increment the hatch angle between layers in degrees. This is typically set to
+        66.6 Degrees per layer to provide additional uniformity of the scan vectors across multiple layers. By default
+        this is set to 0.0."""
         return self._layerAngleIncrement
 
     @layerAngleIncrement.setter
@@ -364,22 +422,25 @@ class Hatcher(BaseHatcher):
         self._hatchSortMethod = value
 
     @property
-    def numInnerContours(self):
+    def numInnerContours(self) -> int:
         """
-        Total number of inner contours to generate for a region (default: 1)
+        The total number of inner contours to generate by offsets from the boundary region.
         """
         return self._numInnerContours
 
     @numInnerContours.setter
-    def numInnerContours(self, value):
+    def numInnerContours(self, value : int):
         self._numInnerContours = value
 
     @property
-    def numOuterContours(self):
+    def numOuterContours(self) -> int:
+        """
+        The total number of outer contours to generate by offsets from the boundary region.
+        """
         return self._numOuterContours
 
     @numOuterContours.setter
-    def numOuterContours(self, value):
+    def numOuterContours(self, value: int):
         self._numOuterContours = value
 
     @property
@@ -391,19 +452,26 @@ class Hatcher(BaseHatcher):
         self._clusterDistance = value
 
     @property
-    def spotCompensation(self):
+    def spotCompensation(self) -> float:
+        """
+        The spot (laser point) compensation factor is the distance to offset the outer-boundary and other internal hatch
+        features in order to factor in the exposure radius of the laser.
+        """
         return self._spotCompensation
 
     @spotCompensation.setter
-    def spotCompensation(self, value):
+    def spotCompensation(self, value: float):
         self._spotCompensation = value
 
     @property
-    def volumeOffsetHatch(self):
+    def volumeOffsetHatch(self) -> float:
+        """
+        An additional offset may be added (positive or negative) between the contour and the internal hatching.
+        """
         return self._volOffsetHatch
 
     @volumeOffsetHatch.setter
-    def volumeOffsetHatch(self, value):
+    def volumeOffsetHatch(self, value: float):
         self._volOffsetHatch = value
 
     def hatch(self, boundaryFeature):
@@ -445,7 +513,6 @@ class Hatcher(BaseHatcher):
         curBoundary = self.offsetBoundary(boundaryFeature, offsetDelta)
 
         scanVectors = []
-        scanVectorMidpoints = []
 
         # Iterate through each closed polygon region in the slice. The currently individually sliced.
         for contour in curBoundary:
@@ -471,13 +538,13 @@ class Hatcher(BaseHatcher):
             if len(clippedPaths) == 0:
                 continue
 
-            clippedLines = np.transpose(np.dstack(clippedPaths), axes=[2, 0, 1])
+            clippedLines = self.clipperToHatchArray(clippedPaths)
 
-            # Extract only x-y coordinates
+            # Extract only x-y coordinates and sort based on the pseudo-order stored in the z component.
             clippedLines = clippedLines[:,:,:3]
             id = np.argsort(clippedLines[:,0,2])
             clippedLines = clippedLines[id,:,:]
-            print('clipped lines shapes', clippedLines.shape)
+
             scanVectors.append(clippedLines)
 
 
@@ -510,9 +577,12 @@ class Hatcher(BaseHatcher):
                 else:
                     hatchVectors = np.vstack(scanVectors)[sortedHatchIdx]
 
-            hatchVectors = np.vstack(scanVectors)
+
             # Construct a HatchGeometry containg the list of points
             hatchGeom = HatchGeometry()
+
+            # Only copy the (x,y) points from the coordinate array.
+            hatchVectors = np.vstack(scanVectors)
             hatchGeom.coords = hatchVectors[:,:,:2]
 
             layer.hatches.append(hatchGeom)
