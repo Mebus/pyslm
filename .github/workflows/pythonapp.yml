@@ -20,10 +20,17 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.8
+    - name: Enable universe repository
+      apt_repository:
+        repo: "{{ item }}"
+      loop:
+        - "deb http://archive.ubuntu.com/ubuntu/ bionic universe"
+        - "deb http://archive.ubuntu.com/ubuntu/ bionic-updates universe"
+        - "deb http://security.ubuntu.com/ubuntu/ bionic-security universe"
     - name: Install APT On Linux
       run: |
         sudo apt-get update -qq -y
-        sudo apt-get install -qq -y libglu1-mesa
+        sudo apt-get install -qq -y libglu1-mesa libspatialindex5 build-essential
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
