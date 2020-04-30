@@ -19,11 +19,6 @@ with open(version_file, 'r') as f:
 # note that `pip` requires setuptools itself
 requirements_default = set([
     'numpy',     # all data structures
-    'shapely',
-    'rtree',
-    'networkx',
-    'trimesh',  # Required for meshing geometry
-    'scikit-image',
     'setuptools'  # used for packaging
 ])
 
@@ -31,6 +26,11 @@ requirements_default = set([
 # anything on Windows, Linux, and Mac, for Python 2.7-3.4+
 requirements_easy = set([
     'setuptools',  # do setuptools stuff
+    'shapely',
+    'rtree',
+    'scikit-image',
+    'networkx',
+    'trimesh',  # Required for meshing geometry
     'colorlog'])   # log in pretty colors
 
 
