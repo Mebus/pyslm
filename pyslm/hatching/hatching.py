@@ -321,36 +321,24 @@ class BaseHatcher(abc.ABC):
     def hatch(self,boundaryFeature):
         raise NotImplementedError()
 
-if False:
 
-    class InnerHatchRegion(BaseHatcher):
+class InnerHatchRegion:
 
-        def __init__(self, parent):
+    def __init__(self, parent):
 
-            self._parent = parent
-            self._region = []
+        self._parent = parent
+        self._region = []
+        raise NotImplementedError()
 
-        def __str__(self):
-            return 'InnerHatchRegion <{:s}>'
+    def __str__(self):
+        return 'InnerHatchRegion <{:s}>'
 
-        @property
-        def boundary(self):
-            return self._boundary
+    @property
+    def boundary(self):
+        return self._boundary
 
-        def intersection(selfs):
-            pc = pyclipper.Pyclipper()
-
-            for path in sliceA:
-                pc.AddPath(pyclipper.scale_to_clipper(path, 1000), pyclipper.PT_CLIP, True)
-
-            for path in sliceB:
-                pc.AddPath(pyclipper.scale_to_clipper(path, 1000), pyclipper.PT_SUBJECT, True)
-
-
-            result = pc.Execute(pyclipper.CT_DIFFERENCE, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
-
-        def isClipped(self):
-            pass
+    def isClipped(self):
+        pass
 
 
 class Hatcher(BaseHatcher):
