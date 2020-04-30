@@ -40,7 +40,10 @@ requirements_docs = set([
     'jupyter',
     'sphinx_rtd_theme',
     'pypandoc',
-    'autodocsumm'])
+    'autodocsumm',
+    'numpy',
+    'scipy',
+    'trimesh'])
 
 with open('README.rst') as f:
     readme = f.read()
