@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .context import pyccx
+from .context import pyslm
 
 import unittest
 import platform
