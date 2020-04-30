@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Learn more: https://github.com/lukeparry/pyccx/setup.py
 import os
 
 from setuptools import setup, find_packages
@@ -10,13 +9,13 @@ from Cython.Build import cythonize
 # load __version__ without importing anything
 version_file = os.path.join(
     os.path.dirname(__file__),
-    'pyccx/version.py')
+    'pyslm/version.py')
 
 with open(version_file, 'r') as f:
     # use eval to get a clean string of version from file
     __version__ = eval(f.read().strip().split('=')[-1])
 
-# minimal requirements for installing pyccx
+# minimal requirements for installing PySLM
 # note that `pip` requires setuptools itself
 requirements_default = set([
     'numpy',     # all data structures
@@ -49,8 +48,6 @@ with open('README.rst') as f:
 with open('LICENSE') as f:
     license = f.read()
 
-dev_mode = os.path.exists('/external/pyclipper/dev')
-
 
 ext = Extension("pyclipper",
                 sources =  ["external/pyclipper/pyclipper/pyclipper.pyx", "external/pyclipper/pyclipper/clipper.cpp"],
@@ -79,7 +76,7 @@ setup(
     version=__version__,
     description=' Python Package for Additive Manufacturing Development',
     long_description_content_type='text/x-rst',
-    long_description=long_description,
+    long_description=readme,
     author='Luke Parry',
     author_email='dev@lukeparry.uk',
     url='https://github.com/drlukeparry/pyslm',
