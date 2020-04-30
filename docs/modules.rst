@@ -1,29 +1,17 @@
-.. automodapi:: pyccx.core
-    :allowed-package-names: AnalysisError, AnalysisType, ElementSet, NodeSet, SurfaceSet, Simulation
+.. automodapi:: pyslm.core
+    :allowed-package-names: DocumentObject, Part
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
 
-.. automodapi:: pyccx.loadcase
-    :allowed-package-names: LoadCase, LoadCaseType
+.. automodapi:: pyslm.hatching.hatching
+    :allowed-package-names: BaseHatcher, Hatcher, StripeHatcher
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
 
-.. automodapi:: pyccx.material
-    :allowed-package-names: Material, ElastoPlasticMaterial
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :toctree: api
-
-.. automodapi:: pyccx.results
-    :allowed-package-names: ElementResult, NodalResult, ResultProcessor
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :toctree: api
-
-.. automodapi:: pyccx.mesh.mesher
-    :allowed-package-names: ElementType, Mesher, MeshingAlgorithm
+.. automodapi:: pyslm.geometry
+    :allowed-package-names: ContourGeometry, HatchGeometry, LayerGeometry PntGeometry, Layer
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
