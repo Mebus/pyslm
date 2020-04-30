@@ -9,7 +9,6 @@ from ..geometry import LayerGeometry, ContourGeometry, HatchGeometry, Layer
 
 
 class BaseHatcher(abc.ABC):
-
     PYCLIPPER_SCALEFACTOR = 1e4
     """ 
     The scaling factor used for polygon clipping and offsetting in PyClipper for the decimal component of each polygon
@@ -34,10 +33,11 @@ class BaseHatcher(abc.ABC):
         """
         Returns the accuracy of the polygon clipping depending on the chosen scale factor :attribute:`~hatching.BaseHatcher.PYCLIPPER_SCALEFACTOR`"
         """
-        return 1./cls.PYCLIPPER_SCALEFACTOR
+        return 1. / cls.PYCLIPPER_SCALEFACTOR
 
     @staticmethod
-    def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows = False, plotOrderLine = False, handle=None) -> None:
+    def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows=False,
+             plotOrderLine=False, handle=None) -> None:
         """
         Plots the all the scan vectors and point exposures in the Layer Geometry which includes the
         :param layer: The Layer containing the Layer Geometry
@@ -84,12 +84,12 @@ class BaseHatcher(abc.ABC):
                 if plotArrows and not plot3D:
                     for hatch in hatches:
                         midPoint = np.mean(hatch, axis=0)
-                        delta = hatch[1,:] - hatch[0,:]
+                        delta = hatch[1, :] - hatch[0, :]
 
                         plt.annotate('',
-                                     xytext=midPoint-delta*1e-4,
+                                     xytext=midPoint - delta * 1e-4,
                                      xy=midPoint,
-                                     arrowprops={'arrowstyle' : "->",'facecolor': 'black'})
+                                     arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
 
                 if plot3D:
                     ax.add_collection3d(lc, zs=zPos)
@@ -101,8 +101,6 @@ class BaseHatcher(abc.ABC):
                     ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
 
                 ax.add_collection(lc)
-
-
 
         if plotContours:
             for contourGeom in layer.contours:
@@ -118,9 +116,9 @@ class BaseHatcher(abc.ABC):
                     lineWidth = 0.7
 
                 if plotArrows and not plot3D:
-                    for i in range(contourGeom.coords.shape[0]-1):
-                        midPoint = np.mean(contourGeom.coords[i:i+2], axis=0)
-                        delta = contourGeom.coords[i+1, :] - contourGeom.coords[i, :]
+                    for i in range(contourGeom.coords.shape[0] - 1):
+                        midPoint = np.mean(contourGeom.coords[i:i + 2], axis=0)
+                        delta = contourGeom.coords[i + 1, :] - contourGeom.coords[i, :]
 
                         plt.annotate('',
                                      xytext=midPoint - delta * 1e-4,
@@ -140,7 +138,6 @@ class BaseHatcher(abc.ABC):
 
         return fig, ax
 
-
     def offsetPolygons(self, polygons, offset: float):
         """
         Offsets the boundaries across a collection of polygons
@@ -150,7 +147,6 @@ class BaseHatcher(abc.ABC):
         :return:
         """
         return [self.offsetBoundary(poly, offset) for poly in polygons]
-
 
     def offsetBoundary(self, paths, offset: float):
         """
@@ -179,7 +175,6 @@ class BaseHatcher(abc.ABC):
             offsetContours += self._getChildPaths(polyChild)
 
         return offsetContours
-
 
     def _getChildPaths(self, poly):
 
@@ -219,7 +214,7 @@ class BaseHatcher(abc.ABC):
         bboxList = []
 
         for subObj in obj:
-            path = np.array(subObj)[:,:2] # Use only coordinates in XY plane
+            path = np.array(subObj)[:, :2]  # Use only coordinates in XY plane
             bboxList.append(np.hstack([np.min(path, axis=0), np.max(path, axis=0)]))
 
         bboxList = np.vstack(bboxList)
@@ -290,11 +285,11 @@ class BaseHatcher(abc.ABC):
         x = np.tile(np.arange(-bboxRadius, bboxRadius, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
         y = np.array([-bboxRadius, bboxRadius]);
         y = np.resize(y, x.shape)
-        z = np.arange(0, x.shape[0]/2, 0.5).astype(np.int64)
+        z = np.arange(0, x.shape[0] / 2, 0.5).astype(np.int64)
 
         coords = np.hstack([x.reshape(-1, 1),
                             y.reshape(-1, 1),
-                            z.reshape(-1,1)]);
+                            z.reshape(-1, 1)]);
 
         print('coords.', coords.shape)
         # Create the rotation matrix
@@ -318,14 +313,13 @@ class BaseHatcher(abc.ABC):
         return np.transpose(np.dstack(coords), axes=[2, 0, 1])
 
     @abc.abstractmethod
-    def hatch(self,boundaryFeature):
+    def hatch(self, boundaryFeature):
         raise NotImplementedError()
 
 
 class InnerHatchRegion:
 
     def __init__(self, parent):
-
         self._parent = parent
         self._region = []
         raise NotImplementedError()
@@ -360,7 +354,7 @@ class Hatcher(BaseHatcher):
         self._clusterDistance = 5  # mm
 
         # Hatch Information
-        self._layerAngleIncrement = 0 # 66 + 2 / 3
+        self._layerAngleIncrement = 0  # 66 + 2 / 3
         self._hatchDistance = 0.08  # mm
         self._hatchAngle = 45
         self._hatchSortMethod = 'alternate'
@@ -417,7 +411,7 @@ class Hatcher(BaseHatcher):
         return self._numInnerContours
 
     @numInnerContours.setter
-    def numInnerContours(self, value : int):
+    def numInnerContours(self, value: int):
         self._numInnerContours = value
 
     @property
@@ -477,7 +471,7 @@ class Hatcher(BaseHatcher):
             for poly in offsetBoundary:
                 for path in poly:
                     contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)[:,:2]
+                    contourGeometry.coords = np.array(path)[:, :2]
                     contourGeometry.type = "outer"
                     layer.contours.append(contourGeometry)  # Append to the layer
 
@@ -490,7 +484,7 @@ class Hatcher(BaseHatcher):
             for poly in offsetBoundary:
                 for path in poly:
                     contourGeometry = ContourGeometry()
-                    contourGeometry.coords = np.array(path)[:,:2]
+                    contourGeometry.coords = np.array(path)[:, :2]
                     contourGeometry.type = "inner"
                     layer.contours.append(contourGeometry)  # Append to the layer
 
@@ -529,12 +523,11 @@ class Hatcher(BaseHatcher):
             clippedLines = self.clipperToHatchArray(clippedPaths)
 
             # Extract only x-y coordinates and sort based on the pseudo-order stored in the z component.
-            clippedLines = clippedLines[:,:,:3]
-            id = np.argsort(clippedLines[:,0,2])
-            clippedLines = clippedLines[id,:,:]
+            clippedLines = clippedLines[:, :, :3]
+            id = np.argsort(clippedLines[:, 0, 2])
+            clippedLines = clippedLines[id, :, :]
 
             scanVectors.append(clippedLines)
-
 
         if len(clippedLines) > 0:
             # Scan vectors have been
@@ -544,7 +537,7 @@ class Hatcher(BaseHatcher):
 
             # Only copy the (x,y) points from the coordinate array.
             hatchVectors = np.vstack(scanVectors)
-            hatchGeom.coords = hatchVectors[:,:,:2]
+            hatchGeom.coords = hatchVectors[:, :, :2]
 
             layer.hatches.append(hatchGeom)
 
@@ -558,7 +551,6 @@ class StripeHatcher(Hatcher):
     across a region in order to mitigate the effects of residual stress. """
 
     def __init__(self):
-
         super().__init__()
 
         self._stripeWidth = 5.0
@@ -583,7 +575,7 @@ class StripeHatcher(Hatcher):
         return self._stripeOverlap
 
     @stripeOverlap.setter
-    def stripeOverlap(self, overlap:float):
+    def stripeOverlap(self, overlap: float):
         self._stripeOverlap = overlap
 
     @property
@@ -621,31 +613,153 @@ class StripeHatcher(Hatcher):
         diagonal = bbox[2:] - bboxCentre
         bboxRadius = np.sqrt(diagonal.dot(diagonal))
 
-        numStripes = int(2 * bboxRadius / self._stripeWidth)+1
+        numStripes = int(2 * bboxRadius / self._stripeWidth) + 1
 
         # Construct a square which wraps the radius
         hatchOrder = 0
         coords = []
-        for i in np.arange(0,numStripes):
+        for i in np.arange(0, numStripes):
             startX = -bboxRadius + i * (self._stripeWidth) - self._stripeOverlap
             endX = startX + (self._stripeWidth) + self._stripeOverlap
 
-            y = np.tile(np.arange(-bboxRadius + np.mod(i,2) * self._stripeOffset*hatchSpacing,
-                                  bboxRadius + np.mod(i,2) * self._stripeOffset*hatchSpacing, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
-            #x = np.tile(np.arange(startX, endX, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
+            y = np.tile(np.arange(-bboxRadius + np.mod(i, 2) * self._stripeOffset * hatchSpacing,
+                                  bboxRadius + np.mod(i, 2) * self._stripeOffset * hatchSpacing, hatchSpacing,
+                                  dtype=np.float32).reshape(-1, 1), (2)).flatten()
+            # x = np.tile(np.arange(startX, endX, hatchSpacing, dtype=np.float32).reshape(-1, 1), (2)).flatten()
             x = np.array([startX, endX])
             x = np.resize(x, y.shape)
             z = np.arange(hatchOrder, hatchOrder + y.shape[0] / 2, 0.5).astype(np.int64)
 
             hatchOrder += x.shape[0] / 2
 
-            coords += [ np.hstack([x.reshape(-1, 1),
-                                y.reshape(-1, 1),
-                                z.reshape(-1, 1)]) ]
+            coords += [np.hstack([x.reshape(-1, 1),
+                                  y.reshape(-1, 1),
+                                  z.reshape(-1, 1)])]
 
         coords = np.vstack(coords)
 
+        # Create the rotation matrix
+        c, s = np.cos(theta_h), np.sin(theta_h)
+        R = np.array([(c, -s, 0),
+                      (s, c, 0),
+                      (0, 0, 1.0)])
 
+        # Apply the rotation matrix and translate to bounding box centre
+        coords = np.matmul(R, coords.T)
+        coords = coords.T + np.hstack([bboxCentre, 0.0])
+
+        return coords
+
+
+class IslandHatcher(Hatcher):
+    """
+    The Island Hatcher extends the standard Hatcher but generates a set of islands of fixed size which to cover a region.
+    This a common scan strategy adopted across SLM ssystems. This has the effect of limiting the max length of the scan
+    whilst by orientating the scan vectors orthogonal to each other mitigiating any preferntial distortion or curling
+    in a single directipn and any effects to microstructure. """
+
+    def __init__(self):
+
+        super().__init__()
+
+        self._islandWidth = 5.0
+        self._islandOverlap = 0.1
+        self._islandOffset = 0.5
+
+    def __str__(self):
+        return 'IslandHatcher'
+
+    @property
+    def islandWidth(self) -> float:
+        """ The Island Width """
+        return self._islandWidth
+
+    @islandWidth.setter
+    def islandWidth(self, width: float):
+        self._islandWidth = width
+
+    @property
+    def islandOverlap(self) -> float:
+        """ The length of overlap between adjacent islands"""
+        return self._islandOverlap
+
+    @islandOverlap.setter
+    def islandOverlap(self, overlap: float):
+        self._islandOverlap = overlap
+
+    @property
+    def islandOffset(self):
+        """ The island offset is the relative distance (hatch spacing) to move the scan vectors between adjacent checkers. """
+        return self._islandOffset
+
+    @islandOffset.setter
+    def islandOffset(self, offset: float):
+        self._islandOffset = offset
+
+    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
+        """
+        Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
+        of the polygon bounding box
+
+        :param paths:
+        :param hatchSpacing: Hatch Spacing to use
+        :param hatchAngle: Hatch angle (degrees) to rotate the scan vectors
+
+        :return: Returns the list of unclipped scan vectors
+
+        """
+        # Hatch angle
+        theta_h = np.radians(hatchAngle)  # 'rad'
+
+        # Get the bounding box of the paths
+        bbox = self.polygonBoundingBox(paths)
+
+        print('bounding box bbox', bbox)
+        # Expand the bounding box
+        bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
+
+        # Calculates the diagonal length for which is the longest
+        diagonal = bbox[2:] - bboxCentre
+        bboxRadius = np.sqrt(diagonal.dot(diagonal))
+
+        numIslands = int(2 * bboxRadius / self._islandWidth) + 1
+
+        # Construct a square which wraps the radius
+        hatchOrder = 0
+        coords = []
+        for i in np.arange(0, numIslands):
+            for j in np.arange(0, numIslands):
+                startX = -bboxRadius + i * (self._islandWidth) - self._islandOverlap
+                endX = startX + (self._islandWidth) + self._islandOverlap
+
+                startY = -bboxRadius + j * (self._islandWidth) - self._islandOverlap
+                endY = startY + (self._islandWidth) + self._islandOverlap
+
+                if np.mod(i + j, 2):
+                    y = np.tile(np.arange(startY + np.mod(i + j, 2) * self._islandOffset * hatchSpacing,
+                                          endY + np.mod(i + j, 2) * self._islandOffset * hatchSpacing, hatchSpacing,
+                                          dtype=np.float32).reshape(-1, 1), (2)).flatten()
+
+                    x = np.array([startX, endX])
+                    x = np.resize(x, y.shape)
+                    z = np.arange(hatchOrder, hatchOrder + y.shape[0] / 2, 0.5).astype(np.int64)
+
+                else:
+                    x = np.tile(np.arange(startX + np.mod(i + j, 2) * self._islandOffset * hatchSpacing,
+                                          endX + np.mod(i + j, 2) * self._islandOffset * hatchSpacing, hatchSpacing,
+                                          dtype=np.float32).reshape(-1, 1), (2)).flatten()
+
+                    y = np.array([startY, endY])
+                    y = np.resize(y, x.shape)
+                    z = np.arange(hatchOrder, hatchOrder + y.shape[0] / 2, 0.5).astype(np.int64)
+
+                hatchOrder += x.shape[0] / 2
+
+                coords += [np.hstack([x.reshape(-1, 1),
+                                      y.reshape(-1, 1),
+                                      z.reshape(-1, 1)])]
+
+        coords = np.vstack(coords)
 
         # Create the rotation matrix
         c, s = np.cos(theta_h), np.sin(theta_h)
