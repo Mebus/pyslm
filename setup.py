@@ -42,6 +42,7 @@ requirements_docs = set([
     'pypandoc',
     'autodocsumm',
     'numpy',
+    'shapely',
     'scipy',
     'networkx',
     'trimesh'])
