@@ -14,7 +14,7 @@ print(solidPart.boundingBox)
 z = 23.
 
 # Create a StripeHatcher object for performing any hatching operations
-myHatcher = hatching.StripeHatcher()
+myHatcher = hatching.IslandHatcher()
 myHatcher.stripeWidth = 5.0
 
 # Set the base hatching parameters which are generated within Hatcher

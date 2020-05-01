@@ -727,8 +727,10 @@ class IslandHatcher(Hatcher):
         # Construct a square which wraps the radius
         hatchOrder = 0
         coords = []
+
         for i in np.arange(0, numIslands):
             for j in np.arange(0, numIslands):
+
                 startX = -bboxRadius + i * (self._islandWidth) - self._islandOverlap
                 endX = startX + (self._islandWidth) + self._islandOverlap
 
