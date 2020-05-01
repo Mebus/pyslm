@@ -35,6 +35,7 @@ requirements_easy = set([
 
 
 # requirements for building documentation
+# Note API is only read from pyclipper in external project
 requirements_docs = set([
     'sphinx',
     'jupyter',
@@ -44,6 +45,7 @@ requirements_docs = set([
     'numpy',
     'shapely',
     'scipy',
+    'pyclipper',
     'networkx',
     'trimesh'])
 

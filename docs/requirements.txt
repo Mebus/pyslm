@@ -8,3 +8,4 @@ networkx
 trimesh
 sphinx-automodapi
 sphinx-autodoc-typehints
+pyclipper
