@@ -9,3 +9,4 @@ trimesh
 sphinx-automodapi
 sphinx-autodoc-typehints
 pyclipper
+scikit-image

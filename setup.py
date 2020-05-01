@@ -45,6 +45,7 @@ requirements_docs = set([
     'numpy',
     'shapely',
     'scipy',
+    'scikit-image'
     'pyclipper',
     'networkx',
     'trimesh'])
