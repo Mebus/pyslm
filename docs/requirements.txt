@@ -2,6 +2,7 @@ sphinx
 autodocsumm
 pypandoc
 numpy
+scipy
 shapely
 networkx
 trimesh

@@ -1,5 +1,6 @@
 sphinx
 numpy
+scipy
 shapely
 networkx
 Rtree
