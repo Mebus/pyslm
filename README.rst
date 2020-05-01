@@ -59,18 +59,17 @@ via PyPi and/or Anaconda distribution.
     conda install -c conda-forge shapely, Rtree, networkx, scikit-image
     pip install trimesh
 
-Installation of pyslm can then be performed
+Installation of pyslm can then be performed using pre-built python packages using the pypi project.
 
 .. code:: bash
 
     pip install pyslm
 
-or alternatively downloading the package directly. On Windows platforms the path of the executable needs to be initialised before use.
+Alternatively, pyslm may be compiled from source. Currently the prerequisites are the cython packagee and a c++ build environment.
 
-.. code:: python
-
-    from pyslm.core import Simulation
-
+.. code:: bash
+    git clone https://github.com/drlukeparry/pyslm.git && cd ./pyslm
+    python setup.py install
 
 Usage
 ******

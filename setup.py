@@ -43,6 +43,7 @@ requirements_docs = set([
     'autodocsumm',
     'numpy',
     'scipy',
+    'networkx',
     'trimesh'])
 
 with open('README.rst') as f:

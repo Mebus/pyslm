@@ -1,5 +1,8 @@
 sphinx
 autodocsumm
 pypandoc
+numpy
+networkx
+trimesh
 sphinx-automodapi
 sphinx-autodoc-typehints
