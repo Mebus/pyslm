@@ -31,8 +31,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'autodocsumm',
               'sphinx_autodoc_typehints',
-              'sphinx.ext.coverage',
-              'sphinx_paramlinks']
+              'sphinx.ext.coverage']
 
 # See options here for audodocsumm https://readthedocs.org/projects/sphinx-automodapi/downloads/pdf/latest/
 
