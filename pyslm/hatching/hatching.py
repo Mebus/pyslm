@@ -9,11 +9,13 @@ from ..geometry import LayerGeometry, ContourGeometry, HatchGeometry, Layer
 
 
 class BaseHatcher(abc.ABC):
+
+
     PYCLIPPER_SCALEFACTOR = 1e4
     """ 
-    The scaling factor used for polygon clipping and offsetting in PyClipper for the decimal component of each polygon
-    coordinate. This should be set to inverse of the required decimal tolerance e.g. 0.01 requires a minimum 
-    scalefactor of 1e2. 
+    The scaling factor used for polygon clipping and offsetting in `PyClipper <http://pyclipper.com`_ for the decimal component of each polygon
+    coordinate. This should be set to inverse of the required decimal tolerance i.e. 0.01 requires a minimum
+    scalefactor of 1e2. This scaling factor is used in :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`. 
     """
 
     def __init__(self):
@@ -22,16 +24,30 @@ class BaseHatcher(abc.ABC):
     def __str__(self):
         return 'BaseHatcher <{:s}>'.format(self.name)
 
-    def scaleToClipper(self, feature):
+    def scaleToClipper(self, feature: Any):
+        """
+        Transforms geometry created **to pyclipper**  by upscaling into the integer coordinates  **from** the original
+        floating point coordinate system.
+
+        :param feature: The geometry to scale to pyclipper
+        :return: The scaled geometry
+        """
         return pyclipper.scale_to_clipper(feature, BaseHatcher.PYCLIPPER_SCALEFACTOR)
 
-    def scaleFromClipper(self, feature):
+    def scaleFromClipper(self, feature: Any):
+        """
+        Transforms geometry created **from pyclipper** upscaled integer coordinates back **to** the original
+        floating point coordinate system.
+
+        :param feature: The geometry to scale to pyclipper
+        :return: The scaled geometry
+        """
         return pyclipper.scale_from_clipper(feature, BaseHatcher.PYCLIPPER_SCALEFACTOR)
 
     @classmethod
-    def error(cls):
+    def error(cls) -> float:
         """
-        Returns the accuracy of the polygon clipping depending on the chosen scale factor :attribute:`~hatching.BaseHatcher.PYCLIPPER_SCALEFACTOR`"
+        Returns the accuracy of the polygon clipping depending on the chosen scale factor :attr:`.PYCLIPPER_SCALEFACTOR`.
         """
         return 1. / cls.PYCLIPPER_SCALEFACTOR
 
@@ -42,12 +58,12 @@ class BaseHatcher(abc.ABC):
         Plots the all the scan vectors and point exposures in the Layer Geometry which includes the
         :param layer: The Layer containing the Layer Geometry
         :param zPos: The position of the layer when using the 3D plot (optional)
-        :param plotContours: Plots the inner hatch scan vectors
+        :param plotContours: Plots the inner hatch scan vectors. Defaults to `True`
         :param plotHatches: Plots the hatch scan vectors
         :param plotPoints: Plots point exposures
         :param plot3D: Plots the layer in 3D
         :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of matplotlib annotations, should be disabled for large datasets
-        :param plotOrderLine: Plots an additional line showing the order of vecctor scanning
+        :param plotOrderLine: Plots an additional line showing the order of vector scanning
         :param handle: Matplotlib handle to re-use
         """
 
@@ -140,21 +156,22 @@ class BaseHatcher(abc.ABC):
 
     def offsetPolygons(self, polygons, offset: float):
         """
-        Offsets the boundaries across a collection of polygons
+        Offsets the boundaries across a collection of polygons. Note that if any polygons are expanded overlap with adjacent
+        polygons, the offsetting will **NOT** unify into a single shape.
 
-        :param polygons:
-        :param offset: The offset applied to the poylgon
+        :param polygons: A list of closed polygons which are individually offset from each other.
+        :param offset: The offset distance applied to the poylgon
         :return:
         """
         return [self.offsetBoundary(poly, offset) for poly in polygons]
 
     def offsetBoundary(self, paths, offset: float):
         """
-        Offsets a single path for a single polygon
+        Offsets a single path for a single polygon.
 
-        :param paths:
+        :param paths: Closed polygon path list for offsetting
         :param offset: The offset applied to the poylgon
-        :return:
+        :return: A list of boundaries offset from the subject
         """
         pc = pyclipper.PyclipperOffset()
 
@@ -201,10 +218,10 @@ class BaseHatcher(abc.ABC):
 
     def polygonBoundingBox(self, obj) -> np.ndarray:
         """
-        Returns the bounding box of the polygon
+        Returns the bounding box of the polygon(s)
 
-        :param obj:
-        :return: The bounding box of the polygon
+        :param obj: Geometry object
+        :return: The bounding box of the geometry
         """
         # Path (n,2) coords that
 
@@ -224,14 +241,14 @@ class BaseHatcher(abc.ABC):
 
     def clipLines(self, paths, lines):
         """
-        This function clips a series of lines (hatches) across a closed polygon using Pyclipper. Note, the order is NOT
+        This function clips a series of lines (hatches) across a closed polygon using pyclipper. **Note**, the order is NOT
         guaranteed from the list of lines used, so these must be sorted. If order requires preserving this must be
         sequentially performed at a significant computational expense.
 
-        :param paths:
+        :param paths: The set of boundary paths for trimming the lines
         :param lines: The un-trimmed lines to clip from the boundary
 
-        :return: A list of trimmed lines (paths)
+        :return: A list of trimmed lines (open paths)
         """
 
         pc = pyclipper.Pyclipper()
@@ -306,14 +323,20 @@ class BaseHatcher(abc.ABC):
 
     def clipperToHatchArray(self, coords: np.ndarray) -> np.ndarray:
         """
-        A helper method which converts the raw line lists from pyclipper into a array
+        A helper method which converts the raw polygon edge lists returned by pyclipper into a numpy array.
 
         :param coords: The list of hatches generated from pyclipper
+        :return: The hatch coordinates transfromed into a (n x 2 x 3) numpy array.
         """
         return np.transpose(np.dstack(coords), axes=[2, 0, 1])
 
     @abc.abstractmethod
     def hatch(self, boundaryFeature):
+        """The hatch method should be re-implemented by a child class to
+
+        :param boundaryFeature: The collection of boundaries of closed polygons within a layer.
+        :raises: NotImplementedError
+        """
         raise NotImplementedError()
 
 
@@ -384,10 +407,10 @@ class Hatcher(BaseHatcher):
         self._hatchAngle = value
 
     @property
-    def layerAngleIncrement(self):
+    def layerAngleIncrement(self) ->float:
         """
         An additional offset used to increment the hatch angle between layers in degrees. This is typically set to
-        66.6 Degrees per layer to provide additional uniformity of the scan vectors across multiple layers. By default
+        66.6 degrees per layer to provide additional uniformity of the scan vectors across multiple layers. By default
         this is set to 0.0."""
         return self._layerAngleIncrement
 
@@ -530,9 +553,9 @@ class Hatcher(BaseHatcher):
             scanVectors.append(clippedLines)
 
         if len(clippedLines) > 0:
-            # Scan vectors have been
+            # Scan vectors have been created
 
-            # Construct a HatchGeometry containg the list of points
+            # Construct a HatchGeometry containing the list of points
             hatchGeom = HatchGeometry()
 
             # Only copy the (x,y) points from the coordinate array.
@@ -546,7 +569,7 @@ class Hatcher(BaseHatcher):
 
 class StripeHatcher(Hatcher):
     """
-    The Stripe Hatcher extends the standard Hatcher but generates a set of stripe hatches of a fixed width to cover a region.
+    The Stripe Hatcher extends the standard :class:`Hatcher` but generates a set of stripe hatches of a fixed width (:attr:`~.stripeWidth`) to cover a region.
     This a common scan strategy adopted by users of EOS systems. This has the effect of limiting the max length of the scan vectors
     across a region in order to mitigate the effects of residual stress. """
 
@@ -589,7 +612,7 @@ class StripeHatcher(Hatcher):
 
     def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
         """
-        Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
+        Generates un-clipped hatches which is guaranteed to cover the entire polygon region based on the maximum extent
         of the polygon bounding box
 
         :param paths:
@@ -653,10 +676,10 @@ class StripeHatcher(Hatcher):
 
 class IslandHatcher(Hatcher):
     """
-    The Island Hatcher extends the standard Hatcher but generates a set of islands of fixed size which to cover a region.
-    This a common scan strategy adopted across SLM ssystems. This has the effect of limiting the max length of the scan
-    whilst by orientating the scan vectors orthogonal to each other mitigiating any preferntial distortion or curling
-    in a single directipn and any effects to microstructure. """
+    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`.islandWidth`)
+    which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the max length of the scan
+    whilst by orientating the scan vectors orthogonal to each other mitigating any preferential distortion or curling
+    in a single direction and any effects to microstructure. """
 
     def __init__(self):
 
@@ -671,7 +694,7 @@ class IslandHatcher(Hatcher):
 
     @property
     def islandWidth(self) -> float:
-        """ The Island Width """
+        """ The island width """
         return self._islandWidth
 
     @islandWidth.setter
@@ -699,13 +722,13 @@ class IslandHatcher(Hatcher):
     def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
         """
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
-        of the polygon bounding box
+        of the polygon bounding box.
 
-        :param paths:
-        :param hatchSpacing: Hatch Spacing to use
-        :param hatchAngle: Hatch angle (degrees) to rotate the scan vectors
+        :param paths: The boundaries that the hatches should fill entirely
+        :param hatchSpacing: The hatch spacing
+        :param hatchAngle: The hatch angle (degrees) to rotate the scan vectors
 
-        :return: Returns the list of unclipped scan vectors
+        :return: Returns the list of unclipped scan vectors covering the region
 
         """
         # Hatch angle

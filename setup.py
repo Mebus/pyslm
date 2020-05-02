@@ -40,6 +40,7 @@ requirements_docs = set([
     'sphinx',
     'jupyter',
     'sphinx_rtd_theme',
+    'sphinx-paramlinks'
     'pypandoc',
     'autodocsumm',
     'numpy',

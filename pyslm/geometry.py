@@ -110,7 +110,8 @@ class PntsGeometry(LayerGeometry):
 
 class Layer:
     """
-    Slice Layer is a simple class structure for containing a set of SLM Layer Geometries
+    Slice Layer is a simple class structure for containing a set of SLM Layer Geometries including
+    Contour, Hatch, Point Geometry Types and also the current slice or layer position in z.
     """
 
     def __init__(self, z):

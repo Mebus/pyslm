@@ -1,4 +1,7 @@
 sphinx
+sphinx-automodapi
+sphinx-autodoc-typehints
+sphinx-paramlinks
 autodocsumm
 pypandoc
 numpy
@@ -6,7 +9,5 @@ scipy
 shapely
 networkx
 trimesh
-sphinx-automodapi
-sphinx-autodoc-typehints
 pyclipper
 scikit-image
