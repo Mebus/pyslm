@@ -6,6 +6,8 @@ PySLM Python Library for Selective Laser Melting
 .. image:: https://readthedocs.org/projects/pyslm/badge/?version=latest
     :target: https://pyslm.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
+.. image:: https://badge.fury.io/py/PythonSLM.svg
+    :target: https://badge.fury.io/py/PythonSLM
 
 
 PySLM is a python library for processing the input files used on Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS)
@@ -63,7 +65,7 @@ Installation of pyslm can then be performed using pre-built python packages usin
 
 .. code:: bash
 
-    pip install pyslm
+    pip install PythonSLM
 
 Alternatively, pyslm may be compiled from source. Currently the prerequisites are the cython packagee and a c++ build environment.
 
@@ -111,4 +113,4 @@ length generated in a region.
     hatching.Hatcher.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
 
 
-Documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .
+Further documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .

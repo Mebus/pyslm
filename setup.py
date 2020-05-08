@@ -79,7 +79,7 @@ extB = Extension("pyslm.pyclipper",
                  )
 
 setup(
-    name='pyslm',
+    name='PythonSLM',
     version=__version__,
     description='Python Package for Additive Manufacturing Development',
     long_description=readme,
