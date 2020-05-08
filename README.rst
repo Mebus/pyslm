@@ -68,6 +68,7 @@ Installation of pyslm can then be performed using pre-built python packages usin
 Alternatively, pyslm may be compiled from source. Currently the prerequisites are the cython packagee and a c++ build environment.
 
 .. code:: bash
+
     git clone https://github.com/drlukeparry/pyslm.git && cd ./pyslm
     python setup.py install
 

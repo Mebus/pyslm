@@ -56,6 +56,7 @@ class BaseHatcher(abc.ABC):
              plotOrderLine=False, handle=None) -> None:
         """
         Plots the all the scan vectors and point exposures in the Layer Geometry which includes the
+
         :param layer: The Layer containing the Layer Geometry
         :param zPos: The position of the layer when using the 3D plot (optional)
         :param plotContours: Plots the inner hatch scan vectors. Defaults to `True`

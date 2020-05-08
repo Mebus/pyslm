@@ -18,7 +18,7 @@ with open(version_file, 'r') as f:
 # minimal requirements for installing PySLM
 # note that `pip` requires setuptools itself
 requirements_default = set([
-    'numpy',     # all data structures
+    'numpy',  # all data structures
     'setuptools'  # used for packaging
 ])
 
@@ -31,8 +31,7 @@ requirements_easy = set([
     'scikit-image',
     'networkx',
     'trimesh',  # Required for meshing geometry
-    'colorlog'])   # log in pretty colors
-
+    'colorlog'])  # log in pretty colors
 
 # requirements for building documentation
 # Note API is only read from pyclipper in external project
@@ -56,10 +55,9 @@ with open('README.rst') as f:
 
 with open('LICENSE') as f:
     license = f.read()
-
-
+ 
 ext = Extension("pyclipper",
-                sources =  ["external/pyclipper/pyclipper/pyclipper.pyx", "external/pyclipper/pyclipper/clipper.cpp"],
+                sources=["external/pyclipper/pyclipper.pyx", "external/pyclipper/clipper.cpp"],
                 language="c++",
                 # define extra macro definitions that are used by clipper
                 # Available definitions that can be used with pyclipper:
@@ -70,44 +68,42 @@ ext = Extension("pyclipper",
                 )
 
 extB = Extension("pyslm.pyclipper",
-                sources = ["external/pyclipper/pyclipper/pyclipper.cpp", "external/pyclipper/pyclipper/clipper.cpp"],
-                language="c++",
-                # define extra macro definitions that are used by clipper
-                # Available definitions that can be used with pyclipper:
-                # use_lines, use_int32
-                # See pyclipper/clipper.hpp
-                define_macros=[('use_lines', 1),
-                               ('use_xyz', 1)]
-                )
+                 sources=["external/pyclipper/pyclipper.cpp", "external/pyclipper/clipper.cpp"],
+                 language="c++",
+                 # define extra macro definitions that are used by clipper
+                 # Available definitions that can be used with pyclipper:
+                 # use_lines, use_int32
+                 # See pyclipper/clipper.hpp
+                 define_macros=[('use_lines', 1),
+                                ('use_xyz', 1)]
+                 )
 
 setup(
-    name='PySLM',
+    name='pyslm',
     version=__version__,
-    description=' Python Package for Additive Manufacturing Development',
-    long_description_content_type='text/x-rst',
+    description='Python Package for Additive Manufacturing Development',
     long_description=readme,
+    long_description_content_type = 'text/x-rst',
     author='Luke Parry',
     author_email='dev@lukeparry.uk',
     url='https://github.com/drlukeparry/pyslm',
     keywords=['3D Printing', 'AM', 'Additive Manufacturing', 'Geometry', 'SLM', 'Selective Laser Melting'],
-    ext_modules=cythonize([ext,extB]),
+    ext_modules=cythonize([ext, extB]),
     setup_requires=[
-       'cython>=0.28'
+        'cython>=0.28'
     ],
+
     python_requires='>=3.5',
     classifiers=[
-        'License :: OSI Approved :: LGPL License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Natural Language :: English',
         'Topic :: Scientific/Engineering'],
-    license=license,
+    license="",
     packages=find_packages(exclude=('tests', 'docs', 'examples')),
     install_requires=list(requirements_default),
     extras_require={'easy': list(requirements_easy),
                     'docs': list(requirements_docs)}
 )
-
-
