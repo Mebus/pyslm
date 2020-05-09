@@ -105,5 +105,12 @@ setup(
     packages=find_packages(exclude=('tests', 'docs', 'examples')),
     install_requires=list(requirements_default),
     extras_require={'easy': list(requirements_easy),
-                    'docs': list(requirements_docs)}
+                    'docs': list(requirements_docs)},
+
+    project_urls = {
+    'Documentation': 'https://pyslm.readthedocs.io/en/latest/',
+    'Source': 'https://github.com/drylukeparry/pyslm/pyslm/',
+    'Tracker': 'https://github.com/drlukeparry/pyslm/issues'
+    }
+
 )

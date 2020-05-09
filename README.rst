@@ -14,7 +14,7 @@ PySLM is a python library for processing the input files used on Selective Laser
 platform typically used in both academia and industry for Additive Manufacturing. The core capabilities aim to include
 slicing, hatching and support generation and providing  an interface to the binary build file formats available for platforms.
 The library is built of core classes which may provide the basic functionality to generate the scan vectors used on systems
-and also be used as building blocks to prototype and develop new alogirthms.
+and also be used as building blocks to prototype and develop new algorithms.
 
 PySLM is built-upon python libraries `Trimesh <https://github.com/mikedh/trimesh>`_ and based on some custom modifications
 to the `PyClipper <https://pypi.org/project/pyclipper/>`_ libraries which are leveraged to provide the  slicing and
@@ -76,7 +76,7 @@ Alternatively, pyslm may be compiled from source. Currently the prerequisites ar
 
 Usage
 ******
-A basic example below, shows how relativly straightforward it is to generate a single layer from a STL mesh which generates
+A basic example below, shows how relatively straightforward it is to generate a single layer from a STL mesh which generates
 a the hatch infill using a Stripe Scan Strategy typically employed on some commercial systems to limit the maximum scan vector
 length generated in a region.
 
