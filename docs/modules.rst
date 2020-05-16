@@ -5,7 +5,7 @@
     :toctree: api
 
 .. automodapi:: pyslm.hatching.hatching
-    :allowed-package-names: BaseHatcher, Hatcher, StripeHatcher
+    :allowed-package-names: BaseHatcher, Hatcher, StripeHatcher, IslandHatcher
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api

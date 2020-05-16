@@ -39,13 +39,21 @@ a single/multi point exposure by generating a series of scan vectors in a region
 * Slicing of triangular meshes supported via the `Trimesh <https://github.com/mikedh/trimesh>`_ library.
 
 **Hatching:**
+The following operations are provided as a convenience to aid developing the scan strategies:
 
-* Standard 'alternating' hatching is available
-* Stripe Scan Strategy Available
+* Offsetting of contours and boundaries
+* Trimming of lines and hatch vectors (sequentially ordered)
+
+The following scan strategies have been implemented as reference on platforms:
+
+* Standard 'alternating' hatching
+* Stripe Scan Strategy
+* Island or Checkerboard Scan Strategy
 
 **Visualisation:**
 
-* The laser scan vectors can be visualised and
+The laser scan vectors can be visualised using ``Matplotlib``. The order of the scan vectors can be shown to aid development
+of the scan strategies.
 
 **Export to Machine Files:**
 
@@ -61,13 +69,13 @@ via PyPi and/or Anaconda distribution.
     conda install -c conda-forge shapely, Rtree, networkx, scikit-image
     pip install trimesh
 
-Installation of pyslm can then be performed using pre-built python packages using the pypi project.
+Installation of pyslm can then be performed using pre-built python packages using the PyPi repository.
 
 .. code:: bash
 
     pip install PythonSLM
 
-Alternatively, pyslm may be compiled from source. Currently the prerequisites are the cython packagee and a c++ build environment.
+Alternatively, PySLM may be compiled from source. Currently the prerequisites are the cython package and a compliant c++ build environment.
 
 .. code:: bash
 
@@ -113,4 +121,4 @@ length generated in a region.
     hatching.Hatcher.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
 
 
-Further documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .
+For further guidance please look at documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .
