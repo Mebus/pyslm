@@ -8,6 +8,9 @@ PySLM Python Library for Selective Laser Melting
     :alt: Documentation Status
 .. image:: https://badge.fury.io/py/PythonSLM.svg
     :target: https://badge.fury.io/py/PythonSLM
+.. image:: https://badges.gitter.im/pyslm/community.svg
+    :target: https://gitter.im/pyslm/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+    :alt: Chat on Gitter
 
 
 PySLM is a python library for processing the input files used on Selective Laser Melting (SLM), Direct Metal Laser Sintering (DMLS)
