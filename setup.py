@@ -20,6 +20,9 @@ with open(version_file, 'r') as f:
 requirements_default = set([
     'numpy',  # all data structures
     'setuptools'  # used for packaging
+    'shapely',
+    'rtree',
+    'trimesh'
 ])
 
 # "easy" requirements should install without compiling
