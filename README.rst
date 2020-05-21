@@ -49,7 +49,7 @@ The following operations are provided as a convenience to aid developing the sca
 
 The following scan strategies have been implemented as reference on platforms:
 
-* Standard 'alternating' hatching
+* Standard 'Alternating' hatching
 * Stripe Scan Strategy
 * Island or Checkerboard Scan Strategy
 
@@ -60,17 +60,20 @@ of the scan strategies.
 
 **Export to Machine Files:**
 
-* Currently WIP to port previous c++ code and provide generic bindings to platforms (Renishaw MTT, Realizer, EOS CLI formats)
+Currently WIP to provide `libSLM <https://github.com/drlukeparry/libSLM>`_  to enable import and export from
+* Renishaw MTT,
+* DMG Mori Realizer,
+* EOS CLI formats
 
 Installation
 *************
-Installation is currently supported on Windows and Linux environments. The prerequisties for using PySLM can be installed
+Installation is currently supported on Windows and Linux environments. The pre-requisites for using PySLM can be installed
 via PyPi and/or Anaconda distribution.
 
 .. code:: bash
 
     conda install -c conda-forge shapely, Rtree, networkx, scikit-image
-    pip install trimesh
+    conda install trimesh
 
 Installation of pyslm can then be performed using pre-built python packages using the PyPi repository.
 
