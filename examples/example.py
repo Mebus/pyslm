@@ -42,6 +42,6 @@ print('Completed Hatching')
 # Plot the layer geometries using matplotlib
 # The order of scanning for the hatch region can be displayed by setting the parameter (plotOrderLine=True)
 # Arrows can be enables by setting the parameter plotArrows to True
-hatching.Hatcher.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
+pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
 
 
