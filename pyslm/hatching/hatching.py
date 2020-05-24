@@ -1,14 +1,32 @@
-import pyclipper
-import numpy as np
-
 import abc
 from typing import Any, Tuple, List
 from skimage.measure import approximate_polygon, subdivide_polygon
 
-from ..geometry import LayerGeometry, ContourGeometry, HatchGeometry, Layer
+import numpy as np
 
+from .. import pyclipper
+from libSLM import Layer, LayerGeometry, ContourGeometry, HatchGeometry
 
 class BaseHatcher(abc.ABC):
+    """
+    The BaseHatcher class provides common methods used for generating the 'contour' and infill 'hatch' scan vectors.
+
+    The class provides an interface tp generate a variety of hatcing patterns used. The developer should implmenet a
+    subclass and re-define the abstract method, :meth:`BaseHatcher.hatch`, which will be called.
+
+
+    The user typically specifies a boundary,  which may be offset the boundary of region using :meth:`~BaseHatcher,offsetBoundary`.
+     This is typically performmed before generating the infill.  Following offsetting, the a series of hatch lines are
+     generated using :meth:`~BaseHatcher.generateHatching` to fill the entire boundary region using
+     :meth:`~BaseHatcher.polygonBoundingBox`.  To obtain the final clipped in-fill, the hatches are clipped using
+     :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are generated using a technique
+     explained further in the class method. The generated scan paths should be stored into collections of LayerGeometry
+     accordingly.
+
+    For all polygon manipulation operations, this calls provides automatic conversion to the integer coordinate system
+    used by ClipperLib by internally calling :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`.
+
+    """
 
 
     PYCLIPPER_SCALEFACTOR = 1e4
@@ -50,110 +68,6 @@ class BaseHatcher(abc.ABC):
         Returns the accuracy of the polygon clipping depending on the chosen scale factor :attr:`.PYCLIPPER_SCALEFACTOR`.
         """
         return 1. / cls.PYCLIPPER_SCALEFACTOR
-
-    @staticmethod
-    def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows=False,
-             plotOrderLine=False, handle=None) -> None:
-        """
-        Plots the all the scan vectors and point exposures in the Layer Geometry which includes the
-
-        :param layer: The Layer containing the Layer Geometry
-        :param zPos: The position of the layer when using the 3D plot (optional)
-        :param plotContours: Plots the inner hatch scan vectors. Defaults to `True`
-        :param plotHatches: Plots the hatch scan vectors
-        :param plotPoints: Plots point exposures
-        :param plot3D: Plots the layer in 3D
-        :param plotArrows: Plot the direction of each scan vector. This reduces the plotting performance due to use of matplotlib annotations, should be disabled for large datasets
-        :param plotOrderLine: Plots an additional line showing the order of vector scanning
-        :param handle: Matplotlib handle to re-use
-        """
-
-        import matplotlib.pyplot as plt
-        import matplotlib.colors
-        import matplotlib.collections as mc
-
-        if handle:
-            fig = handle[0]
-            ax = handle[1]
-
-        else:
-            if plot3D:
-                from mpl_toolkits.mplot3d import Axes3D
-                fig = plt.figure()
-                ax = plt.axes(projection='3d')
-            else:
-                fig, ax = plt.subplots()
-
-        ax.axis('equal')
-        plotNormalize = matplotlib.colors.Normalize()
-
-        if plotHatches:
-            hatches = [hatchGeom.coords for hatchGeom in layer.hatches]
-
-            if len(hatches) > 0:
-
-                hatches = np.vstack([hatchGeom.coords for hatchGeom in layer.hatches])
-
-                lc = mc.LineCollection(hatches,
-                                       colors=plt.cm.rainbow(plotNormalize(np.arange(len(hatches)))),
-                                       linewidths=0.5)
-
-                if plotArrows and not plot3D:
-                    for hatch in hatches:
-                        midPoint = np.mean(hatch, axis=0)
-                        delta = hatch[1, :] - hatch[0, :]
-
-                        plt.annotate('',
-                                     xytext=midPoint - delta * 1e-4,
-                                     xy=midPoint,
-                                     arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
-
-                if plot3D:
-                    ax.add_collection3d(lc, zs=zPos)
-
-                if not plot3D and plotOrderLine:
-                    ax.add_collection(lc)
-                    midPoints = np.mean(hatches, axis=1)
-                    idx6 = np.arange(len(hatches))
-                    ax.plot(midPoints[idx6][:, 0], midPoints[idx6][:, 1])
-
-                ax.add_collection(lc)
-
-        if plotContours:
-            for contourGeom in layer.contours:
-
-                if contourGeom.type == 'inner':
-                    lineColor = '#f57900';
-                    lineWidth = 1
-                elif contourGeom.type == 'outer':
-                    lineColor = '#204a87';
-                    lineWidth = 1.4
-                else:
-                    lineColor = 'k';
-                    lineWidth = 0.7
-
-                if plotArrows and not plot3D:
-                    for i in range(contourGeom.coords.shape[0] - 1):
-                        midPoint = np.mean(contourGeom.coords[i:i + 2], axis=0)
-                        delta = contourGeom.coords[i + 1, :] - contourGeom.coords[i, :]
-
-                        plt.annotate('',
-                                     xytext=midPoint - delta * 1e-4,
-                                     xy=midPoint,
-                                     arrowprops={'arrowstyle': "->", 'facecolor': 'black'})
-
-                if plot3D:
-                    ax.plot(contourGeom.coords[:, 0], contourGeom.coords[:, 1], zs=zPos, color=lineColor,
-                            linewidth=lineWidth)
-                else:
-                    ax.plot(contourGeom.coords[:, 0], contourGeom.coords[:, 1], color=lineColor,
-                            linewidth=lineWidth)
-
-        if plotPoints:
-            for pointsGeom in layer.points:
-                ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
-
-        return fig, ax
 
     def offsetPolygons(self, polygons, offset: float):
         """
@@ -272,7 +186,7 @@ class BaseHatcher(abc.ABC):
 
         return self.scaleFromClipper(lineOutput)
 
-    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
+    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0) -> np.ndarray:
         """
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
         of the polygon bounding box
@@ -367,6 +281,8 @@ class Hatcher(BaseHatcher):
     """
 
     def __init__(self):
+
+        super().__init__()
 
         # TODO check that the polygon boundary feature type
         # Contour information
@@ -482,7 +398,7 @@ class Hatcher(BaseHatcher):
 
     def hatch(self, boundaryFeature):
 
-        layer = Layer(0.0)
+        layer = Layer(0, 0)
         # First generate a boundary with the spot compensation applied
 
         offsetDelta = 0.0
@@ -496,8 +412,8 @@ class Hatcher(BaseHatcher):
                 for path in poly:
                     contourGeometry = ContourGeometry()
                     contourGeometry.coords = np.array(path)[:, :2]
-                    contourGeometry.type = "outer"
-                    layer.contours.append(contourGeometry)  # Append to the layer
+                    contourGeometry.subType = "outer"
+                    layer.geometry.append(contourGeometry)  # Append to the layer
 
         # Repeat for inner contours
         for i in range(self._numInnerContours):
@@ -509,8 +425,8 @@ class Hatcher(BaseHatcher):
                 for path in poly:
                     contourGeometry = ContourGeometry()
                     contourGeometry.coords = np.array(path)[:, :2]
-                    contourGeometry.type = "inner"
-                    layer.contours.append(contourGeometry)  # Append to the layer
+                    contourGeometry.subType = "inner"
+                    layer.geometry.append(contourGeometry)  # Append to the layer
 
         # The final offset is applied to the boundary
 
@@ -561,9 +477,9 @@ class Hatcher(BaseHatcher):
 
             # Only copy the (x,y) points from the coordinate array.
             hatchVectors = np.vstack(scanVectors)
-            hatchGeom.coords = hatchVectors[:, :, :2]
+            hatchGeom.coords = hatchVectors[:, :, :2].reshape(-1, 2)
 
-            layer.hatches.append(hatchGeom)
+            layer.geometry.append(hatchGeom)
 
         return layer
 
@@ -603,7 +519,7 @@ class StripeHatcher(Hatcher):
         self._stripeOverlap = overlap
 
     @property
-    def stripeOffset(self):
+    def stripeOffset(self) -> float:
         """ The stripe offset is the relative distance (hatch spacing) to move the scan vectors between adjacent stripes"""
         return self._stripeOffset
 
@@ -611,7 +527,7 @@ class StripeHatcher(Hatcher):
     def stripeOffset(self, offset: float):
         self._stripeOffset = offset
 
-    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
+    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0) -> np.ndarray:
         """
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region based on the maximum extent
         of the polygon bounding box
@@ -642,9 +558,10 @@ class StripeHatcher(Hatcher):
         # Construct a square which wraps the radius
         hatchOrder = 0
         coords = []
+
         for i in np.arange(0, numStripes):
-            startX = -bboxRadius + i * (self._stripeWidth) - self._stripeOverlap
-            endX = startX + (self._stripeWidth) + self._stripeOverlap
+            startX = -bboxRadius + i * self._stripeWidth - self._stripeOverlap
+            endX = startX + self._stripeWidth + self._stripeOverlap
 
             y = np.tile(np.arange(-bboxRadius + np.mod(i, 2) * self._stripeOffset * hatchSpacing,
                                   bboxRadius + np.mod(i, 2) * self._stripeOffset * hatchSpacing, hatchSpacing,
@@ -678,9 +595,9 @@ class StripeHatcher(Hatcher):
 class IslandHatcher(Hatcher):
     """
     IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`.islandWidth`)
-    which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the max length of the scan
-    whilst by orientating the scan vectors orthogonal to each other mitigating any preferential distortion or curling
-    in a single direction and any effects to microstructure. """
+    which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the
+    max length of the scan whilst by orientating the scan vectors orthogonal to each other mitigating any preferential
+    distortion or curling  in a single direction and any effects to microstructure. """
 
     def __init__(self):
 
@@ -712,7 +629,7 @@ class IslandHatcher(Hatcher):
         self._islandOverlap = overlap
 
     @property
-    def islandOffset(self):
+    def islandOffset(self) -> float:
         """ The island offset is the relative distance (hatch spacing) to move the scan vectors between adjacent checkers. """
         return self._islandOffset
 
@@ -720,7 +637,7 @@ class IslandHatcher(Hatcher):
     def islandOffset(self, offset: float):
         self._islandOffset = offset
 
-    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0):
+    def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0) -> np.ndarray:
         """
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
         of the polygon bounding box.
