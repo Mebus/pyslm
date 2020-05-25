@@ -5,7 +5,16 @@ from skimage.measure import approximate_polygon, subdivide_polygon
 import numpy as np
 
 from .. import pyclipper
-from libSLM import Layer, LayerGeometry, ContourGeometry, HatchGeometry
+
+try:
+    from libSLM import Layer, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
+except BaseException as E:
+    """
+    The libSLM library is not available so instead use the fallback python equivalent in order to store the layer and 
+    geometry information for use later. This removes the capability to export to machine build file format
+    """
+    from ..geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
+
 
 class BaseHatcher(abc.ABC):
     """

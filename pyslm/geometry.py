@@ -1,9 +1,57 @@
 import numpy as np
 
+from enum import Enum
+import abc
+
 from typing import Any, List, Tuple
 
 
-class LayerGeometry:
+class Header:
+    def __init__(self):
+        self.filename = ""
+        self.version = (0,0)
+        self.zUnit = 1000
+
+class BuildStyle:
+
+    def __init__(self):
+        self.bid = 0
+        self.laserPower = 0.0
+        self.laserSpeed = 0.0
+        self.laserFocus = 0.0
+        self.pointDistance = 0
+        self.pointExposureTime = 0.0
+
+    def setStyle(self, bid, focus, power,
+                 pointExposureTime, pointExposureDistance, speed = 0.0):
+
+        self.bid = bid
+        self.laserFocus = focus
+        self.laserPower = power
+        self.pointExposureTime = pointExposureTime
+        self.pointDistance = pointExposureDistance
+        self.laserSpeed = 0.0
+
+class Model:
+
+    def __init__(self):
+        self.mid = 0
+        self.topLayerId = 0
+        self.name = ""
+        self.buildStyles = []
+
+    def __len__(self):
+        return len(self.buildStyles)
+
+
+class LayerGeometryType(Enum):
+    Invalid = 0
+    Polygon = 1
+    Hatch = 2
+    Pnts = 3
+
+
+class LayerGeometry(abc.ABC):
     def __init__(self, modelId: int = 0, buildStyleId: int = 0, coords: np.ndarray = None):
         self._bid = buildStyleId
         self._mid = modelId
@@ -53,6 +101,10 @@ class LayerGeometry:
     def bid(self, buildStyleId: int):
         self._bid = buildStyleId
 
+    @abc.abstractmethod
+    def type(self):
+        return LayerGeometryType.Invalid
+
 
 class HatchGeometry(LayerGeometry):
     def __init__(self, modelId: int = 0, buildStyleId: int = 0, coords: np.ndarray = None):
@@ -64,6 +116,9 @@ class HatchGeometry(LayerGeometry):
 
     def __len__(self):
         return self.numHatches()
+
+    def type(self):
+        return LayerGeometryType.Hatch
 
     def numHatches(self) -> int:
         """
@@ -91,8 +146,11 @@ class ContourGeometry(LayerGeometry):
     def __str__(self):
         return 'Contour Geometry'
 
+    def type(self):
+        return LayerGeometryType.Polygon
 
-class PntsGeometry(LayerGeometry):
+
+class PointsGeometry(LayerGeometry):
     def __init__(self, modelId: int = 0, buildStyleId: int = 0, coords: np.ndarray = None):
 
         super().__init__(modelId, buildStyleId, coords)
@@ -107,6 +165,13 @@ class PntsGeometry(LayerGeometry):
     def __str__(self):
         return 'Points Geometry'
 
+    def type(self):
+        return LayerGeometryType.Pnts
+
+class ScanMode(Enum):
+    Default = 0
+    ContourFirst = 1
+    HatchFirst = 2
 
 class Layer:
     """
@@ -114,52 +179,110 @@ class Layer:
     Contour, Hatch, Point Geometry Types and also the current slice or layer position in z.
     """
 
-    def __init__(self, z):
+    def __init__(self, z = 0, id = 0):
         self._z = z
-        self.id = 0
+        self._id = 0
+        self._geometry = []
+        self._name = ""
 
-        self._contours = []
-        self._hatches = []
-        self._points = []
+    @property
+    def name(self):
+        """ The Z Position of the Layer"""
+        return self._name
 
-    # Const Methods Below
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    @property
+    def layerId(self):
+        """ The Z Position of the Layer"""
+        return self._id
+
+    @layerId.setter
+    def layerId(self, id):
+        self._id = id
+
     @property
     def z(self):
         """ The Z Position of the Layer"""
         return self._z
 
+    @z.setter
+    def z(self, z):
+        """ The Z Position of the Layer"""
+        self._z = z
+
     def __len__(self):
-        return len(self.getLayerGeometry())
+        return len(self._geometry)
 
     def __str__(self):
         return 'Layer <z = {:.3f}>'.format(self._z)
 
-    def getLayerGeometry(self) -> List[Any]:
+    def appendGeometry(self, geom: LayerGeometry):
         """
-        Returns all the layer geometry groups in the layer.
+        Complimentary method to match libSLM API
+
+        :param geom: The LayerGeometry to add to the layer
         """
-        return [self._contours, self._hatches, self._points]
+
+        self._geometry.append(geom)
+
+    def getGeometry(self, scanMode: ScanMode = ScanMode.Default) -> List[Any]:
+        """
+        Contains all the layer geometry groups in the layer.
+        """
+        geoms = []
+
+        if scanMode is ScanMode.ContourFirst:
+            geoms += self.getContourGeometry()
+            geoms += self.getHatchGeometry()
+            geoms += self.getPointsGeometry()
+        elif scanMode is ScanMode.HatchFirst:
+            geoms += self.getHatchGeometry()
+            geoms += self.getContourGeometry()
+            geoms += self.getPointsGeometry()
+        else:
+            geoms = self._geometry
+
+        return geoms
 
     @property
-    def contours(self) -> List[ContourGeometry]:
-        return self._contours
+    def geometry(self) -> List[Any]:
+        """
+        Contains all the layer geometry groups in the layer.
+        """
 
-    @contours.setter
-    def contours(self, geoms: List[ContourGeometry]):
-        self._contours = geoms
+        return self._geometry
 
-    @property
-    def hatches(self) -> List[HatchGeometry]:
-        return self._hatches
+    @geometry.setter
+    def geometry(self, geoms: List[LayerGeometry]):
+        self._geometry = geoms
 
-    @hatches.setter
-    def hatches(self, geoms: List[HatchGeometry]):
-        self._hatches = geoms
+    def getContourGeometry(self) -> List[HatchGeometry]:
 
-    @property
-    def points(self) -> List[PntsGeometry]:
-        return self._points
+        geoms = []
+        for geom in self._geometry:
+            if isinstance(geom, ContourGeometry):
+                geoms.append(geom)
 
-    @points.setter
-    def points(self, geoms: List[PntsGeometry]):
-        self._points = geoms
+        return geoms
+
+    def getHatchGeometry(self) -> List[HatchGeometry]:
+
+        geoms = []
+        for geom in self._geometry:
+            if isinstance(geom, HatchGeometry):
+                geoms.append(geom)
+
+        return geoms
+
+    def getPointsGeometry(self) -> List[PointsGeometry]:
+
+        geoms = []
+        for geom in self._geometry:
+            if isinstance(geom, PointsGeometry):
+                geoms.append(geom)
+
+        return geoms
+
