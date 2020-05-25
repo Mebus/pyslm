@@ -125,7 +125,7 @@ length generated in a region.
     layer = myHatcher.hatch(geomSlice)
 
     # Plot the layer geometries
-    hatching.Hatcher.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
+    pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
 
 
 For further guidance please look at documented examples are provided in `examples <https://github.com/drlukeparry/pyslm/tree/master/examples>`_ .

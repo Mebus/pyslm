@@ -26,7 +26,7 @@ myHatcher.numOuterContours = 1
 
 # Perform the slicing. Return coords paths should be set so they are formatted internally.
 # This is internally performed using Trimesh to obtain a closed set of polygons.
-# Further polygon simpliifcation may be required to reduce excessive number of edges in the boundaries.
+# Further polygon simplification may be required to reduce excessive number of edges in the boundaries.
 
 geomSlice = solidPart.getVectorSlice(z, returnCoordPaths = True)
 
