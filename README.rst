@@ -61,9 +61,10 @@ of the scan strategies.
 **Export to Machine Files:**
 
 Currently WIP to provide `libSLM <https://github.com/drlukeparry/libSLM>`_  to enable import and export from
+
 * Renishaw MTT,
 * DMG Mori Realizer,
-* EOS CLI formats
+* EOS CLI formats.
 
 Installation
 *************
