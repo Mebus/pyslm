@@ -35,6 +35,7 @@ additional design features used for AM systems typically (SLM/SLS/SLA) systems w
 a single/multi point exposure by generating a series of scan vectors in a region.
 
 **Support Structure Generation**
+
 * [TODO] A prototype for support structure generation
 
 **Slicing:**
