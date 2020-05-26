@@ -61,11 +61,13 @@ of the scan strategies.
 
 **Export to Machine Files:**
 
-Currently WIP to provide `libSLM <https://github.com/drlukeparry/libSLM>`_  to enable import and export from
+Currently the capability to enable translation to commercial machine build platforms is being providing through a
+supporting library called `libSLM <https://github.com/drlukeparry/libSLM>`_ . This is a c++ library to enable efficient
+import and export across various commercial machine build files. Work is underway to support the following file formats
 
-* Renishaw MTT,
-* DMG Mori Realizer,
-* EOS CLI formats.
+* Renishaw MTT (**.mtt**),
+* DMG Mori Realizer (**.rea**),
+* EOS SLI formats (**.sli**).
 
 Installation
 *************
@@ -77,13 +79,15 @@ via PyPi and/or Anaconda distribution.
     conda install -c conda-forge shapely, Rtree, networkx, scikit-image
     conda install trimesh
 
-Installation of pyslm can then be performed using pre-built python packages using the PyPi repository.
+Installation of pySLM can then be performed using pre-built python packages using the PyPi repository. Additionally to
+interface with commercial systems, the user should install libSLM.
 
 .. code:: bash
-
+    pip install libSLM
     pip install PythonSLM
 
-Alternatively, PySLM may be compiled from source. Currently the prerequisites are the cython package and a compliant c++ build environment.
+Alternatively, PySLM may be compiled from source. Currently the prerequisites are the cython package and a compliant c++
+build environment.
 
 .. code:: bash
 
