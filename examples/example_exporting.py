@@ -1,6 +1,11 @@
 """
-A simple example showing the basic structure and layout required for generating a machine build file for a SLM System. This is automatically built into the hatching classes, but for simple experiments or simulations it can be useful to create these manually.
+A simple example showing the basic structure and layout required for generating a machine build file for a SLM System.
+This is automatically built into the hatching classes, but for simple experiments or simulations it can be useful to
+create these structures manually.
+
+The following example demonstrate the overall structure required for creating the border of a square region.
 """
+
 import pyslm
 import numpy as np
 
