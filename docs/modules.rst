@@ -10,8 +10,14 @@
     :no-inherited-members:
     :toctree: api
 
+.. automodapi:: pyslm.hatching.sorting
+    :allowed-package-names: BaseSort, AlternateSort
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :toctree: api
+
 .. automodapi:: pyslm.geometry
-    :allowed-package-names: ContourGeometry, HatchGeometry, LayerGeometry PntGeometry, Layer
+    :allowed-package-names: ContourGeometry, HatchGeometry, PointsGeometry, LayerGeometry, Layer, Header, BuildStyle, Model
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api

@@ -19,7 +19,7 @@ with open(version_file, 'r') as f:
 # note that `pip` requires setuptools itself
 requirements_default = set([
     'numpy',  # all data structures
-    'setuptools'  # used for packaging
+    'setuptools',  # used for packaging
     'shapely',
     'rtree',
     'trimesh'
@@ -51,7 +51,8 @@ requirements_docs = set([
     'scikit-image'
     'pyclipper',
     'networkx',
-    'trimesh'])
+    'trimesh',
+    'cython'])
 
 with open('README.rst') as f:
     readme = f.read()
