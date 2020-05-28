@@ -4,7 +4,7 @@ from skimage.measure import approximate_polygon, subdivide_polygon
 
 import numpy as np
 
-from .. import pyclipper
+from pyslm import pyclipper
 
 from .sorting import AlternateSort, BaseSort, LinearSort
 from ..geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
