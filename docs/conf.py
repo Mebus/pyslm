@@ -39,6 +39,9 @@ autodoc_default_options = {
     'autosummary': True,
 }
 
+# Unfortunatly readthedocs cannot import this
+autodoc_mock_imports = ["pyclipper"]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
