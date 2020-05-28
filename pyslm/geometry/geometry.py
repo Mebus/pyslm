@@ -172,6 +172,10 @@ class PointsGeometry(LayerGeometry):
 
 
 class ScanMode(Enum):
+    """
+    The scan mode is an enumeration class used to re-order all :class:`LayerGeometry` when accessing the entire collection
+    from the :class:`Layer`
+    """
     Default = 0
     ContourFirst = 1
     HatchFirst = 2
@@ -179,8 +183,9 @@ class ScanMode(Enum):
 
 class Layer:
     """
-    Slice Layer is a simple class structure for containing a set of SLM Layer Geometries including
-    Contour, Hatch, Point Geometry Types and also the current slice or layer position in z.
+    Slice Layer is a simple class structure for containing a set of SLM :class:`LayerGeometry` including specific
+    derivatives including: :class:`ContourGeometry`, :class:`HatchGeometry`,:class:`PointsGeometry` Types and also
+    the current slice or layer position in z.
     """
 
     def __init__(self, z = 0, id = 0):
@@ -190,31 +195,35 @@ class Layer:
         self._name = ""
 
     @property
-    def name(self):
-        """ The Z Position of the Layer"""
+    def name(self) -> str:
+        """ The name of the Layer"""
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name : str):
         self._name = name
 
     @property
-    def layerId(self):
-        """ The Z Position of the Layer"""
+    def layerId(self) -> int:
+        """
+        The layer id for the Layer. This corresponds to a position in z based on a uniform layer thickness defined
+        in the header of the machine build file (:attr:`Header.zUnit`) """
         return self._id
 
     @layerId.setter
-    def layerId(self, id):
+    def layerId(self, id: int):
         self._id = id
 
     @property
-    def z(self):
-        """ The Z Position of the Layer"""
+    def z(self) -> int:
+        """
+        The Z Position of the Layer is given as an integer to ensure that no rounding errors are given to the
+        slm systen. Under most situations this should correspond as the product of the layer id (:attr:`Layer.layerId`)
+        and the zUnit - layer thickness (:attr:`Header.zUnit`). """
         return self._z
 
     @z.setter
-    def z(self, z):
-        """ The Z Position of the Layer"""
+    def z(self, z: int):
         self._z = z
 
     def __len__(self):

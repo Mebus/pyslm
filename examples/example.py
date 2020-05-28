@@ -23,6 +23,7 @@ myHatcher.volumeOffsetHatch = 0.08
 myHatcher.spotCompensation = 0.06
 myHatcher.numInnerContours = 2
 myHatcher.numOuterContours = 1
+myHatcher.hatchSortMethod = hatching.AlternateSort()
 
 # Perform the slicing. Return coords paths should be set so they are formatted internally.
 # This is internally performed using Trimesh to obtain a closed set of polygons.
@@ -42,6 +43,6 @@ print('Completed Hatching')
 # Plot the layer geometries using matplotlib
 # The order of scanning for the hatch region can be displayed by setting the parameter (plotOrderLine=True)
 # Arrows can be enables by setting the parameter plotArrows to True
-pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True) # plotArrows=True)
+pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True, plotArrows=True)
 
 

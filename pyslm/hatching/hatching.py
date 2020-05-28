@@ -6,6 +6,7 @@ import numpy as np
 
 from .. import pyclipper
 
+from .sorting import AlternateSort, BaseSort, LinearSort
 from ..geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
 
 
@@ -299,7 +300,8 @@ class Hatcher(BaseHatcher):
         self._layerAngleIncrement = 0  # 66 + 2 / 3
         self._hatchDistance = 0.08  # mm
         self._hatchAngle = 45
-        self._hatchSortMethod = 'alternate'
+        self._hatchSortMethod = None
+
 
     """
     Properties for the Hatch Feature
@@ -339,11 +341,15 @@ class Hatcher(BaseHatcher):
 
     @property
     def hatchSortMethod(self):
+        """ The hatch sort method used once the hatch vectors have been generated """
         return self._hatchSortMethod
 
     @hatchSortMethod.setter
-    def hatchSortMethod(self, value):
-        self._hatchSortMethod = value
+    def hatchSortMethod(self, sortObj):
+        if not isinstance(sortObj, BaseSort):
+            raise TypeError("The Hatch Sort Method should be derived from the BaseSort class")
+
+        self._hatchSortMethod = sortObj
 
     @property
     def numInnerContours(self) -> int:
@@ -471,15 +477,22 @@ class Hatcher(BaseHatcher):
 
             scanVectors.append(clippedLines)
 
+
         if len(clippedLines) > 0:
-            # Scan vectors have been created
+            # Scan vectors have been created for the hatched region
 
             # Construct a HatchGeometry containing the list of points
             hatchGeom = HatchGeometry()
 
             # Only copy the (x,y) points from the coordinate array.
             hatchVectors = np.vstack(scanVectors)
-            hatchGeom.coords = hatchVectors[:, :, :2].reshape(-1, 2)
+            hatchVectors  = hatchVectors[:, :, :2].reshape(-1, 2)
+
+            # Note the does not require positional sorting
+            if self.hatchSortMethod:
+                hatchVectors = self.hatchSortMethod.sort(hatchVectors)
+
+            hatchGeom.coords = hatchVectors
 
             layer.geometry.append(hatchGeom)
 
