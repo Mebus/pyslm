@@ -3,6 +3,7 @@ import networkx as nx
 
 import abc
 
+from .utils import *
 
 class BaseSort(abc.ABC):
     def __init__(self):
@@ -32,15 +33,15 @@ class AlternateSort(BaseSort):
         return 'Alternating Hatch Sort'
 
     def sort(self, scanVectors: np.ndarray) -> np.ndarray:
+        """ This approach simply flips the odd pair of hatches"""
+        sv = to3DHatchArray(scanVectors)
+        sv[1:-1:2] = np.flip(sv[1:-1:2], 1)
 
-        # This approach simply flips the odd pair of hatches
-        linePart = scanVectors[1:-1:2]
-        flippedVectors = np.flip(linePart, 1)
+        #vectorCopy = scanVectors.copy()
+        # return vectorCopy
 
-        vectorCopy = scanVectors.copy()
-        vectorCopy[1:-1:2] = flippedVectors
+        return from3DHatchArray(sv)
 
-        return vectorCopy
 
 class LinearSort(BaseSort):
     """

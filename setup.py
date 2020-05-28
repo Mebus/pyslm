@@ -51,7 +51,8 @@ requirements_docs = set([
     'scikit-image'
     'pyclipper',
     'networkx',
-    'trimesh'])
+    'trimesh',
+    'cython'])
 
 with open('README.rst') as f:
     readme = f.read()
