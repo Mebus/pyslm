@@ -21,7 +21,7 @@ requirements_default = set([
     'numpy',  # all data structures
     'setuptools',  # used for packaging
     'shapely',
-    'rtree',
+    #'rtree',
     'trimesh'
 ])
 
