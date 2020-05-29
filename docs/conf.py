@@ -13,6 +13,7 @@
 
 
 import sys, os
+import mock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -40,7 +41,12 @@ autodoc_default_options = {
 }
 
 # Unfortunatly readthedocs cannot import this
-autodoc_mock_imports = ["pyslm.pyclipper"]
+
+
+MOCK_MODULES = ['pyclipper', 'pyslm.pyclipper']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
