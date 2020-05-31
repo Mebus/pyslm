@@ -3,21 +3,19 @@
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
+    :skip: ABC, Enum, auto
 
-.. automodapi:: pyslm.hatching.hatching
-    :allowed-package-names: BaseHatcher, Hatcher, StripeHatcher, IslandHatcher
+.. automodapi:: pyslm.hatching
+    :allowed-package-names: BaseSort, AlternateSort, GreedySort, LinearSort, BaseHatcher, Hatcher, StripeHatcher, IslandHatcher
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
+    :skip: ABC, Enum, auto, BuildStyle, Header, Model, Layer, LayerGeometry, ContourGeometry, PointsGeometry, HatchGeometry
 
-.. automodapi:: pyslm.hatching.sorting
-    :allowed-package-names: BaseSort, AlternateSort
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :toctree: api
 
 .. automodapi:: pyslm.geometry
     :allowed-package-names: ContourGeometry, HatchGeometry, PointsGeometry, LayerGeometry, Layer, Header, BuildStyle, Model
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
+    :skip: Enum, auto

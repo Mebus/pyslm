@@ -14,29 +14,31 @@ class BaseHatcher(abc.ABC):
     """
     The BaseHatcher class provides common methods used for generating the 'contour' and infill 'hatch' scan vectors.
 
-    The class provides an interface tp generate a variety of hatcing patterns used. The developer should implmenet a
+    The class provides an interface tp generate a variety of hatching patterns used. The developer should re-implement a
     subclass and re-define the abstract method, :meth:`BaseHatcher.hatch`, which will be called.
 
-
-    The user typically specifies a boundary,  which may be offset the boundary of region using :meth:`~BaseHatcher,offsetBoundary`.
-     This is typically performmed before generating the infill.  Following offsetting, the a series of hatch lines are
-     generated using :meth:`~BaseHatcher.generateHatching` to fill the entire boundary region using
-     :meth:`~BaseHatcher.polygonBoundingBox`.  To obtain the final clipped in-fill, the hatches are clipped using
-     :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are generated using a technique
-     explained further in the class method. The generated scan paths should be stored into collections of LayerGeometry
-     accordingly.
+    The user typically specifies a boundary, which may be offset the boundary of region using
+    :meth:`~BaseHatcher,offsetBoundary`.
+    This is typically performed before generating the infill.  Following offsetting, the a series of hatch lines are
+    generated using :meth:`~BaseHatcher.generateHatching` to fill the entire boundary region using
+    :meth:`~BaseHatcher.polygonBoundingBox`.  To obtain the final clipped in-fill, the hatches are clipped using
+    :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are generated using a technique
+    explained further in the class method. The generated scan paths should be stored into collections of LayerGeometry
+    accordingly.
 
     For all polygon manipulation operations, this calls provides automatic conversion to the integer coordinate system
-    used by ClipperLib by internally calling :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`.
+    used by ClipperLib by internally calling :meth:`~BaseHatcher.scaleToClipper` and
+    :meth:`~BaseHatcher.scaleFromClipper`.
 
     """
 
 
     PYCLIPPER_SCALEFACTOR = 1e4
     """ 
-    The scaling factor used for polygon clipping and offsetting in `PyClipper <http://pyclipper.com`_ for the decimal component of each polygon
-    coordinate. This should be set to inverse of the required decimal tolerance i.e. 0.01 requires a minimum
-    scalefactor of 1e2. This scaling factor is used in :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`. 
+    The scaling factor used for polygon clipping and offsetting in `PyClipper <http://pyclipper.com>`_ for the decimal
+     component of each polygon coordinate. This should be set to inverse of the required decimal tolerance i.e. 0.01 
+     requires a minimum scalefactor of 1e2. This scaling factor is used in :meth:`~BaseHatcher.scaleToClipper` 
+     and :meth:`~BaseHatcher.scaleFromClipper`. 
     """
 
     def __init__(self):
@@ -74,12 +76,15 @@ class BaseHatcher(abc.ABC):
 
     def offsetPolygons(self, polygons, offset: float):
         """
-        Offsets the boundaries across a collection of polygons. Note that if any polygons are expanded overlap with adjacent
-        polygons, the offsetting will **NOT** unify into a single shape.
+        Offsets a set of boundaries across a collection of polygons.
+
+        .. note::
+            Note that if any polygons are expanded overlap with adjacent polygons, the offsetting will **NOT** unify
+            into a single shape.
 
         :param polygons: A list of closed polygons which are individually offset from each other.
         :param offset: The offset distance applied to the poylgon
-        :return:
+        :return: A list of boundaries offset from the subject
         """
         return [self.offsetBoundary(poly, offset) for poly in polygons]
 
@@ -159,9 +164,11 @@ class BaseHatcher(abc.ABC):
 
     def clipLines(self, paths, lines):
         """
-        This function clips a series of lines (hatches) across a closed polygon using pyclipper. **Note**, the order is NOT
-        guaranteed from the list of lines used, so these must be sorted. If order requires preserving this must be
-        sequentially performed at a significant computational expense.
+        This function clips a series of lines (hatches) across a closed polygon using pyclipper.
+
+        .. note ::
+            The order is guaranteed from the list of lines used, so these do not require sorting usually. However,
+            the position may require additional sorting to cater for the user's requirements.
 
         :param paths: The set of boundary paths for trimming the lines
         :param lines: The un-trimmed lines to clip from the boundary
@@ -250,7 +257,8 @@ class BaseHatcher(abc.ABC):
 
     @abc.abstractmethod
     def hatch(self, boundaryFeature):
-        """The hatch method should be re-implemented by a child class to
+        """
+        The hatch method should be re-implemented by a child class to
 
         :param boundaryFeature: The collection of boundaries of closed polygons within a layer.
         :raises: NotImplementedError
@@ -279,7 +287,7 @@ class InnerHatchRegion:
 class Hatcher(BaseHatcher):
     """
     Provides a generic SLM Hatcher 'recipe' with standard parameters for defining the hatch across regions. This
-    includes generating multiple contour offsets and the generic infill (without) pattern. This class may be derived from
+    includes generating multiple contour offsets and the generic infill  pattern. This class may be derived from
     to provide additional or customised behavior.
     """
 
@@ -302,10 +310,6 @@ class Hatcher(BaseHatcher):
         self._hatchAngle = 45
         self._hatchSortMethod = None
 
-
-    """
-    Properties for the Hatch Feature
-    """
 
     @property
     def hatchDistance(self) -> float:
@@ -331,8 +335,8 @@ class Hatcher(BaseHatcher):
     def layerAngleIncrement(self) ->float:
         """
         An additional offset used to increment the hatch angle between layers in degrees. This is typically set to
-        66.6 degrees per layer to provide additional uniformity of the scan vectors across multiple layers. By default
-        this is set to 0.0."""
+        66.6 :math:`^{\circ}` per layer to provide additional uniformity of the scan vectors across multiple layers.
+        By default this is set to 0.0."""
         return self._layerAngleIncrement
 
     @layerAngleIncrement.setter
@@ -501,9 +505,11 @@ class Hatcher(BaseHatcher):
 
 class StripeHatcher(Hatcher):
     """
-    The Stripe Hatcher extends the standard :class:`Hatcher` but generates a set of stripe hatches of a fixed width (:attr:`~.stripeWidth`) to cover a region.
-    This a common scan strategy adopted by users of EOS systems. This has the effect of limiting the max length of the scan vectors
-    across a region in order to mitigate the effects of residual stress. """
+    The Stripe Hatcher extends the standard :class:`Hatcher` but generates a set of stripe hatches of a fixed width
+    (:attr:`~.stripeWidth`) to cover a region. This a common scan strategy adopted by users of EOS systems.
+    This has the effect of limiting the max length of the scan vectors  across a region in order to mitigate the
+    effects of residual stress.
+    """
 
     def __init__(self):
         super().__init__()
@@ -612,7 +618,8 @@ class IslandHatcher(Hatcher):
     IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`.islandWidth`)
     which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the
     max length of the scan whilst by orientating the scan vectors orthogonal to each other mitigating any preferential
-    distortion or curling  in a single direction and any effects to microstructure. """
+    distortion or curling  in a single direction and any effects to micro-structure.
+    """
 
     def __init__(self):
 
