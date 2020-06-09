@@ -1,4 +1,5 @@
 import abc
+import time
 from typing import Any, Tuple, List
 from skimage.measure import approximate_polygon, subdivide_polygon
 
@@ -177,8 +178,6 @@ class BaseHatcher(abc.ABC):
         :return: A list of trimmed lines (open paths)
         """
 
-        import time
-
         startTime = time.time()
 
         pc = pyclipper.Pyclipper()
@@ -186,7 +185,7 @@ class BaseHatcher(abc.ABC):
         for path in paths:
             pc.AddPath(self.scaleToClipper(path), pyclipper.PT_CLIP, True)
 
-        print('time to add polygon', time.time()-startTime, 's')
+        #print('time to add polygon', time.time()-startTime, 's')
         startTime = time.time()
 
         # Reshape line list to create n lines with 2 coords(x,y,z)
@@ -196,14 +195,14 @@ class BaseHatcher(abc.ABC):
 
         pc.AddPaths(lineList, pyclipper.PT_SUBJECT, False)
 
-        print('time to add hatches', time.time() - startTime, 's')
+        #print('time to add hatches', time.time() - startTime, 's')
         startTime = time.time()
 
 
         # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
         result = pc.Execute2(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
 
-        print('time to clip hatches', time.time() - startTime, 's')
+        #print('time to clip hatches', time.time() - startTime, 's')
         startTime = time.time()
 
 
@@ -231,7 +230,7 @@ class BaseHatcher(abc.ABC):
         # Get the bounding box of the paths
         bbox = self.polygonBoundingBox(paths)
 
-        print('bounding box bbox', bbox)
+        #print('bounding box bbox', bbox)
         # Expand the bounding box
         bboxCentre = np.mean(bbox.reshape(2, 2), axis=0)
 
