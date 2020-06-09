@@ -6,6 +6,7 @@ import numpy as np
 
 from pyslm import pyclipper
 
+from shapely.geometry import Polygon as ShapelyPolygon
 from .sorting import AlternateSort, BaseSort, LinearSort
 from ..geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
 
@@ -176,10 +177,17 @@ class BaseHatcher(abc.ABC):
         :return: A list of trimmed lines (open paths)
         """
 
+        import time
+
+        startTime = time.time()
+
         pc = pyclipper.Pyclipper()
 
         for path in paths:
             pc.AddPath(self.scaleToClipper(path), pyclipper.PT_CLIP, True)
+
+        print('time to add polygon', time.time()-startTime, 's')
+        startTime = time.time()
 
         # Reshape line list to create n lines with 2 coords(x,y,z)
         lineList = lines.reshape(-1, 2, 3)
@@ -188,8 +196,16 @@ class BaseHatcher(abc.ABC):
 
         pc.AddPaths(lineList, pyclipper.PT_SUBJECT, False)
 
+        print('time to add hatches', time.time() - startTime, 's')
+        startTime = time.time()
+
+
         # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
         result = pc.Execute2(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
+
+        print('time to clip hatches', time.time() - startTime, 's')
+        startTime = time.time()
+
 
         # Cast from PolyNode Struct from the result into line paths since this is not a list
         lineOutput = pyclipper.PolyTreeToPaths(result)
@@ -233,8 +249,7 @@ class BaseHatcher(abc.ABC):
                             y.reshape(-1, 1),
                             z.reshape(-1, 1)]);
 
-        print('coords.', coords.shape)
-        # Create the rotation matrix
+        # Create the 2D rotation matrix with an additional row, column to preserve the hatch order
         c, s = np.cos(theta_h), np.sin(theta_h)
         R = np.array([(c, -s, 0),
                       (s, c, 0),
@@ -266,22 +281,157 @@ class BaseHatcher(abc.ABC):
         raise NotImplementedError()
 
 
-class InnerHatchRegion:
+class InnerHatchRegion(abc.ABC):
+    """
+    The InnerHatchRegion class provides a representation for a single sub-region used for efficiently generating
+    various sub-scale hatch infills. This requires providing a boundary (:attr:`InnerHatchRegion.boundary`) to represent
+    the region used. The user typically in dervived :class:`BaseHatcher` class should set via
+    :meth:`~InnerHatchRegion.setRequiresClipping` if the region requires further clipping.
 
-    def __init__(self, parent):
-        self._parent = parent
+    Finally the derived class must generate a set of hatch vectors covering the boundary region, by re-implementing the
+    abstract method :meth:`~InnerHatchRegion.hatch`. If the boundary requires clipping, the interior hatches are also
+    clipped.
+    """
+
+    def __init__(self):
+
+        self._origin =  np.array([[0,0]])
+        self._orientation = 0.0
+
         self._region = []
-        raise NotImplementedError()
+        self._requiresClipping = False
+        self._isIntersecting = False
+
+    def transformCoordinates2D(self, coords: np.ndarray) -> np.ndarray:
+        """
+        Transforms a set of (n x 2) coordinates using the rotation angle
+        :attr:`InnerHatchRegion.orientation` using the 2D rotation matrix in :meth:`InnerHatchRegion.rotationMatrix2D`.
+
+        :param coords: (nx2) coordinates to be transformed
+        :return:  The transformed coordinates
+        """
+        R = self.rotationMatrix2D()
+
+        # Apply the rotation matrix and translate to bounding box centre
+        coords = np.matmul(R, coords.T)
+        coords = coords.T + np.hstack([self._origin])
+
+        return coords
+
+    def transformCoordinates(self, coords: np.ndarray) -> np.ndarray:
+        """
+        Transforms a set of (n x 3) coordinates with a sort id using the rotation angle
+        :attr:`InnerHatchRegion.orientation` using the 3D rotation matrix in :meth:`InnerHatchRegion.rotationMatrix3D`.
+
+        :param coords: (nx3) coordinates to be transformed
+        :return:  The transformed coordinates
+        """
+
+        R = self.rotationMatrix3D()
+
+        # Apply the rotation matrix and translate to bounding box centre
+        coords = np.matmul(R, coords.T).T
+        coords[:,:2] += self._origin
+
+        return coords
+
+    def rotationMatrix2D(self) -> np.ndarray:
+        """
+        Generates an affine matrix covering the transformation based on the origin and orientation based on a rotation
+        around the local coordinate system. This should be used when only a series of x,y coordinate required to be
+        transformed.
+
+        :return: Affine Transformation Matrix
+        """
+        # Create the rotation matrix
+        c, s = np.cos(self._orientation), np.sin(self._orientation)
+        R = np.array([(c, -s),
+                      (s, c)])
+        return R
+
+
+    def rotationMatrix3D(self) -> np.ndarray:
+        """
+        Generates an affine matrix covering the transformation based on the origin and orientation based on a rotation
+        around the local coordinate system. A pseudo third row and column is provided to retain the hatch sort id used.
+
+        :return: Affine Transformation Matrix
+        """
+        # Create the rotation matrix
+        c, s = np.cos(self._orientation), np.sin(self._orientation)
+        R = np.array([(c, -s, 0),
+                      (s, c, 0),
+                      (0, 0, 1.0)])
+
+        #T = np.diag([1.0,1.0,0])
+        #T[:2,:2] = self._origin
+
+        return R
+
+    @property
+    def orientation(self) -> float:
+        """
+        The orientation describes the rotation of the local coordinate system with respect to the global
+        coordinate system :math:`(x,y)`. The angle of rotation is given in rads. """
+        return self._orientation
+
+    @orientation.setter
+    def orientation(self, angle: float):
+        self._orientation = angle
+
+    @property
+    def origin(self):
+        """ The origin is the :math:`(x\prime,y\prime)` position of of the local coordinate system. """
+        return self._origin
+
+    @origin.setter
+    def origin(self, coord):
+        self._origin = coord
+
+    def setIntersecting(self, intersectingState: bool) -> None:
+        """
+        Setting True indicates the region has been interesecting
+
+        :param intersectingState: True if the region intersects
+        """
+        self._isIntersecting = intersectingState
+
+    def setRequiresClipping(self, clippingState: bool) -> None:
+        """
+        Sets the internal region to require additional clipping following hatch generation.
+
+        :param clippingState: True if the region requires additional clipping
+        """
+        self._requiresClipping = True
 
     def __str__(self):
         return 'InnerHatchRegion <{:s}>'
 
-    @property
-    def boundary(self):
-        return self._boundary
+    @abc.abstractmethod
+    def boundary(self) -> ShapelyPolygon:
+        """ The boundary of the internal region"""
+        raise NotImplementedError
 
-    def isClipped(self):
-        pass
+    def isIntersecting(self) -> bool:
+        """
+        Returns if the region requires additional clipping.
+        """
+
+        return self._isIntersecting
+
+    def requiresClipping(self) -> bool:
+        """
+        Returns if the region requires additional clipping.
+        """
+        return self._requiresClipping
+
+    @abc.abstractmethod
+    def hatch(self) -> np.ndarray:
+        """
+        The hatch method should provide a list of hatch vectors, within the boundary. This must  be re-implemented in
+        the derived class. The hatch vectors should be ordered.
+        """
+        raise NotImplementedError()
 
 
 class Hatcher(BaseHatcher):
@@ -409,6 +559,9 @@ class Hatcher(BaseHatcher):
         self._volOffsetHatch = value
 
     def hatch(self, boundaryFeature):
+
+        if len(boundaryFeature) == 0:
+            return
 
         layer = Layer(0, 0)
         # First generate a boundary with the spot compensation applied
@@ -613,12 +766,19 @@ class StripeHatcher(Hatcher):
         return coords
 
 
-class IslandHatcher(Hatcher):
+class BasicIslandHatcher(Hatcher):
     """
-    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`.islandWidth`)
+    BasicIslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`.islandWidth`)
     which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the
     max length of the scan whilst by orientating the scan vectors orthogonal to each other mitigating any preferential
     distortion or curling  in a single direction and any effects to micro-structure.
+
+    :note:
+
+        This method is not optimal and is provided as a reference for the user to improve their own understand and
+        develop their own island scan strategies. For optimal performance, the user should refer instead to
+        :class:`IslandHatcher`
+
     """
 
     def __init__(self):
@@ -663,13 +823,10 @@ class IslandHatcher(Hatcher):
         """
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
         of the polygon bounding box.
-
         :param paths: The boundaries that the hatches should fill entirely
         :param hatchSpacing: The hatch spacing
         :param hatchAngle: The hatch angle (degrees) to rotate the scan vectors
-
         :return: Returns the list of unclipped scan vectors covering the region
-
         """
         # Hatch angle
         theta_h = np.radians(hatchAngle)  # 'rad'

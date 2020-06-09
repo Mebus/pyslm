@@ -160,45 +160,143 @@ class Part(DocumentObject):
         super().__init__(name)
 
         self._geometry = None
+        self._geometryCache = None
+
         self._bbox = np.zeros((1, 6))
 
         self._partType = 'Undefined'
+
+        self._rotation = np.array((0.0, 0.0, 0.0))
+        self._scaleFactor = np.array((1.0, 1.0, 1.0))
         self._origin = np.array((0.0, 0.0, 0.0))
+        self._dirty = True
 
     def __str__(self):
         return 'Part <{:s}>'.format(self.name)
 
-    def setGeometry(self, filename):
-        self._geometry = trimesh.load_mesh(filename, use_embree=False, process=True, Validate_faces=False)
+    def isDirty(self) -> bool:
+        """
+        When a transformation or the geometry object has been changed via methods in the :class:`Part`
+        the state is toggled dirty and the transformation matrix must be re-applied to generate a new internal
+        representation.
 
-        print('Geometry information <{:s}> - [{:s}]'.format(self.name, filename))
-        print('\t bounds', self._geometry.bounds)
-        print('\t extent', self._geometry.extents)
-
-    @property
-    def geometry(self):
-        return self._geometry
-
-    @property
-    def boundingBox(self):  # const
-        if not self._geometry:
-            raise ValueError('Geometry was not set')
-        else:
-            return  self._geometry.bounds.flatten()
+        :return: The current state of the geometry
+        """
+        return self._dirty
 
     @property
-    def partType(self):
-        return self._partType
+    def rotation(self) -> np.ndarray:
+        return self._rotation
+
+    @rotation.setter
+    def rotation(self, rotation):
+        self._rotation = rotation
+        self._dirty = True
 
     @property
     def origin(self):
         return self._origin
 
     @origin.setter
-    def origin(self, origin):
-        self._origin = origin;
+    def origin(self, origin: np.ndarray):
+        self._origin = origin
+        self._dirty = True
 
-    def getVectorSlice(self, z: float, returnCoordPaths: bool = False) -> Any:
+    @property
+    def scaleFactor(self) -> np.ndarray:
+        return self._scaleFactor
+
+    @scaleFactor.setter
+    def scaleFactor(self, sf: Any):
+
+        if isinstance(sf, float):
+            self._scaleFactor = np.array([sf, sf, sf])
+        else:
+            self._scaleFactor = sf
+
+        self._dirty = True
+
+    def dropToPlatform(self, zPos = 0.0) -> None:
+        """
+        Drops the part a set height (parameter zPos) from its lowest point to a the platform (assumed :math:`z=0`
+
+        :param zPos: The position the bottom of the part should be suspended above :math:`z=0`
+        """
+
+        self.origin[2] = -1.0* self.boundingBox[2] + zPos
+
+    def getTransform(self) -> np.ndarray:
+        """
+        Returns the transformation matrix used for the Part consisting of a translation (:attr:`Part.origin`)
+        rotation :attr:`Part.rotation` and scale factor :attr:`Part.transform`
+        """
+
+        Sx = trimesh.transformations.scale_matrix(factor = self._scaleFactor[0], direction=[1,0,0])
+        Sy = trimesh.transformations.scale_matrix(factor=self._scaleFactor[1] , direction=[0,1,0])
+        Sz = trimesh.transformations.scale_matrix(factor=self._scaleFactor[2], direction=[0,0,1])
+        S = Sx*Sy*Sz
+        T = trimesh.transformations.translation_matrix(self._origin)
+
+        print(Sx,Sy)
+        alpha, beta, gamma = self._rotation
+        R_e = trimesh.transformations.euler_matrix(alpha, beta, gamma, 'rxyz')
+
+        M = trimesh.transformations.concatenate_matrices(T, R_e, S)
+
+        print(M)
+        return M
+
+    def setGeometry(self, filename) -> None:
+        """
+        Sets the Part geometry based on a mesh filename which is a file type compatible with the imports in trimesh.
+
+        :param filename: Mesh filename
+        """
+        self._geometry = trimesh.load_mesh(filename, use_embree=False, process=True, Validate_faces=False)
+
+        print('Geometry information <{:s}> - [{:s}]'.format(self.name, filename))
+        print('\t bounds', self._geometry.bounds)
+        print('\t extent', self._geometry.extents)
+
+        self._dirty = True
+
+    def setGeometryByMesh(self, mesh: trimesh.Trimesh) -> None:
+        """
+         Sets the Part geometry based on an existing Trimesh object.
+
+         :param mesh: The trimesh object loaded
+         """
+        self._geometry = mesh
+        self._dirty = True
+
+    @property
+    def geometry(self) -> trimesh.Trimesh:
+        """
+        The geometry of the part with all transformations applied.
+        """
+        if not self._geometry:
+            return None
+
+        if self.isDirty():
+            print('Updating {:s} Geometry Representation'.format(self.label))
+            self._geometryCache = self._geometry.copy()
+            self._geometryCache.apply_transform(self.getTransform())
+
+        return self._geometryCache
+
+    @property
+    def boundingBox(self):  # const
+        if not self.geometry:
+            raise ValueError('Geometry was not set')
+        else:
+            return  self.geometry.bounds.flatten()
+
+    @property
+    def partType(self):
+        return self._partType
+
+
+    def getVectorSlice(self, z: float, returnCoordPaths: bool = True) -> Any:
         """
         The vector slice is created by using trimesh to slice the mesh into a polygon
 
@@ -206,7 +304,7 @@ class Part(DocumentObject):
         :param z: Slice z-position
         :return: Vector slice
         """
-        if not self._geometry:
+        if not self.geometry:
             raise ValueError('Geometry was not set')
 
         if z < self.boundingBox[2] or z > self.boundingBox[5]:
@@ -218,7 +316,7 @@ class Part(DocumentObject):
                                  [0.0, 0.0, 0.0, 1.0]), dtype=np.float32)
 
         # Obtain the section through the STL polygon using Trimesh Algorithm (Shapely)
-        sections = self._geometry.section(plane_origin=[0, 0, z],
+        sections = self.geometry.section(plane_origin=[0, 0, z],
                                           plane_normal=[0, 0, 1])
 
         if sections == None:
@@ -260,7 +358,7 @@ class Part(DocumentObject):
     def getBitmapSlice(self, z, resolution):
         # Get slice returns the current bitmap slice for a mesh at z position
         # Construct a merged grid for this layer (fixed layer)
-        gridSize = (self._geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
+        gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
 
         sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
 
@@ -270,7 +368,7 @@ class Part(DocumentObject):
 
         polys = self.getVectorSlice(z)
 
-        gridSize = (self._geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
+        gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
         sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
 
         for poly in polys:

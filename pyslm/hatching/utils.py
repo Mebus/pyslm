@@ -1,4 +1,32 @@
+from typing import List
 import numpy as np
+import trimesh.path.polygons
+import shapely.geometry
+from shapely.geometry import Polygon, LinearRing
+
+
+def pathsToClosedPolygons(paths) -> List[shapely.geometry.Polygon]:
+    """
+    Converts closed paths to Shapely polygons with both exterior and interior boundaries. This method leverages the same
+    functionality in Trimesh but in a more convenient form.
+
+    :param paths: A list of closed paths consisting of (n x 2) coordinates
+    :return: List of non-overlapping Shapely Polygons
+    """
+
+    closedPolygons = trimesh.path.polygons.paths_to_polygons(paths)
+
+    (roots, tree) = trimesh.path.polygons.enclosure_tree(closedPolygons)
+
+    complete = []
+    for root in roots:
+        interior = list(tree[root].keys())
+        shell = closedPolygons[root].exterior.coords
+        holes = [closedPolygons[i].exterior.coords for i in interior]
+        complete.append(Polygon(shell=shell,
+                                holes=holes))
+
+    return complete
 
 def isValidHatchArray(hatchVectors: np.ndarray) -> bool:
     """ Utility method """
