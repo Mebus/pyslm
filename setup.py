@@ -64,7 +64,7 @@ ext = Extension("pyclipper",
                 sources=["external/pyclipper/pyclipper.pyx", "external/pyclipper/clipper.cpp"],
                 language="c++",
                 # define extra macro definitions that are used by clipper
-                # Available definitions that can be used with pyclipper:
+                #la Available definitions that can be used with pyclipper:
                 # use_lines, use_int32
                 # See pyclipper/clipper.hpp
                 define_macros=[('use_lines', 1),
