@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import matplotlib.colors
@@ -6,6 +6,7 @@ import matplotlib.collections as mc
 
 import numpy as np
 
+from .geometry import Layer
 
 def plotPolygon(polygons, zPos=0.0, lineColor='k', lineWidth=0.7, fillColor='r',
                 plot3D=False, plotFilled=False,
@@ -59,8 +60,19 @@ def plotPolygon(polygons, zPos=0.0, lineColor='k', lineWidth=0.7, fillColor='r',
 
     return fig, ax
 
+def plotLayers(layers: List[Layer], plotContours=True, plotHatches=True, plotPoints=True, plotOrderLine=False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
 
-def plot(layer , zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows=False,
+    if handle:
+        fig = handle[0]
+        ax = handle[1]
+    else:
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+
+    for layer in layers:
+        fig, ax = plot(layer, layer.z/1000, plot3D=True, plotContours=plotContours, plotHatches=plotHatches, plotPoints=plotPoints, handle = (fig,ax))
+
+def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows=False,
          plotOrderLine=False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots the all the scan vectors (contours and hatches) and point exposures for each Layer Geometry in a Layer
@@ -86,11 +98,12 @@ def plot(layer , zPos=0, plotContours=True, plotHatches=True, plotPoints=True, p
         if plot3D:
             from mpl_toolkits.mplot3d import Axes3D
             fig = plt.figure()
-            ax = plt.axes(projection='3d')
+            ax = plt.axes(projection='3d', aspect='equal')
         else:
             fig, ax = plt.subplots()
+            ax.axis('equal')
 
-    ax.axis('equal')
+
     plotNormalize = matplotlib.colors.Normalize()
 
     if plotHatches:
