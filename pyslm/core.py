@@ -152,7 +152,20 @@ class Document:
 
 class Part(DocumentObject):
     """
-    Part is a solid geometry within the document object tree
+    Part is a solid geometry within the document object tree. Currently this part is individually as part but will
+    be sliced as part of a document tree structure.
+
+    The part can be transformed and has a position (:attr:`Part.origin`),
+    rotation (:attr:`Part.rotation`)  and additional scale factor (:attr:`Part.scaleFactor`)  which is applied to the
+    geometry in its local coordinate system. Changing the geometry using :meth:`Part.setGeometryByMesh` or
+    :meth:`Part.setGeoemtry` along with any of the transformation attributes will set the part dirty and will be
+    recomputed on the next call to obtain the :attr:`Part.geometry`.
+
+    Generallly for AM and 3D printing the following function :meth:`Part.getVectorSlice` is  the most useful method
+    providing the user with a slice for a given z-plane containing the boundaries consisting of a series of polygons.
+    The ouptut from this function is either a list of closed paths (coordinates) or a list of
+    :class:Shapely.geometry.Polygon`.
+    t
     """
 
     def __init__(self, name):
@@ -186,19 +199,33 @@ class Part(DocumentObject):
 
     @property
     def rotation(self) -> np.ndarray:
+        """ The rotation of the part is a 1x3 array representing the rotations in degrees about X,Y,Z in that order. """
         return self._rotation
 
     @rotation.setter
-    def rotation(self, rotation):
+    def rotation(self, rotation: Any):
+
+        rotation = np.asanyarray(rotation)
+
+        if len(rotation) != 3:
+            raise ValueError('Rotation value should be 1x3 Numpy array')
+
         self._rotation = rotation
         self._dirty = True
 
     @property
     def origin(self):
+        """ The origin or the translation of the part."""
         return self._origin
 
     @origin.setter
-    def origin(self, origin: np.ndarray):
+    def origin(self, origin: Any):
+
+        origin = np.asanyarray(origin)
+
+        if len(origin) != 3:
+            raise ValueError('Origin value should be 1x3 Numpy array')
+
         self._origin = origin
         self._dirty = True
 
@@ -216,9 +243,9 @@ class Part(DocumentObject):
 
         self._dirty = True
 
-    def dropToPlatform(self, zPos = 0.0) -> None:
+    def dropToPlatform(self, zPos=0.0) -> None:
         """
-        Drops the part a set height (parameter zPos) from its lowest point to a the platform (assumed :math:`z=0`
+        Drops the part a set height (parameter zPos) from its lowest point to a the platform (assumed :math:`z=0`).
 
         :param zPos: The position the bottom of the part should be suspended above :math:`z=0`
         """
@@ -237,16 +264,15 @@ class Part(DocumentObject):
         S = Sx*Sy*Sz
         T = trimesh.transformations.translation_matrix(self._origin)
 
-        print(Sx,Sy)
-        alpha, beta, gamma = self._rotation
+        alpha, beta, gamma = np.deg2rad((self._rotation))
+
         R_e = trimesh.transformations.euler_matrix(alpha, beta, gamma, 'rxyz')
 
         M = trimesh.transformations.concatenate_matrices(T, R_e, S)
 
-        print(M)
         return M
 
-    def setGeometry(self, filename) -> None:
+    def setGeometry(self, filename: str) -> None:
         """
         Sets the Part geometry based on a mesh filename which is a file type compatible with the imports in trimesh.
 
@@ -285,7 +311,8 @@ class Part(DocumentObject):
         return self._geometryCache
 
     @property
-    def boundingBox(self):  # const
+    def boundingBox(self) -> np.ndarray:  # const
+        """ The bounding box of the geometry transformed in the global coordinate frame."""
         if not self.geometry:
             raise ValueError('Geometry was not set')
         else:
@@ -294,7 +321,6 @@ class Part(DocumentObject):
     @property
     def partType(self):
         return self._partType
-
 
     def getVectorSlice(self, z: float, returnCoordPaths: bool = True) -> Any:
         """
@@ -317,7 +343,7 @@ class Part(DocumentObject):
 
         # Obtain the section through the STL polygon using Trimesh Algorithm (Shapely)
         sections = self.geometry.section(plane_origin=[0, 0, z],
-                                          plane_normal=[0, 0, 1])
+                                         plane_normal=[0, 0, 1])
 
         if sections == None:
             return []
