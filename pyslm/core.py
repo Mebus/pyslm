@@ -251,6 +251,7 @@ class Part(DocumentObject):
         """
 
         self.origin[2] = -1.0* self.boundingBox[2] + zPos
+        self._dirty = True
 
     def getTransform(self) -> np.ndarray:
         """
@@ -307,6 +308,7 @@ class Part(DocumentObject):
             print('Updating {:s} Geometry Representation'.format(self.label))
             self._geometryCache = self._geometry.copy()
             self._geometryCache.apply_transform(self.getTransform())
+            self._dirty = False
 
         return self._geometryCache
 
