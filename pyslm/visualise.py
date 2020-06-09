@@ -6,6 +6,60 @@ import matplotlib.collections as mc
 
 import numpy as np
 
+
+def plotPolygon(polygons, zPos=0.0, lineColor='k', lineWidth=0.7, fillColor='r',
+                plot3D=False, plotFilled=False,
+                handle: Tuple[plt.Figure, plt.Axes] = None) -> Tuple[plt.Figure, plt.Axes]:
+    """
+    Helper method for plotting polygons (numpy coordinates) and those composed of Python lists.
+
+    :param polygons:  A list of polygons
+    :param zPos: The z position of the polygons if plot3D is enabled
+    :param lineColor: Line color used for matplotlib (optional)
+    :param lineWidth: Line width used for matplotlib (optional)
+    :param fillColor:  Fill color for the polygon if plotFilled is enabled (optional)
+    :param plot3D: Plot the polygons in 3D
+    :param plotFilled: Plot filled
+    :param handle: A previous matplotlib (Figure, Axis) object
+
+    :return: A tuple with the matplotlib (Figure, Axis)
+    """
+
+    if handle:
+        fig = handle[0]
+        ax = handle[1]
+
+    else:
+        if plot3D:
+            from mpl_toolkits.mplot3d import Axes3D
+            fig = plt.figure()
+            ax = plt.axes(projection='3d')
+        else:
+            fig, ax = plt.subplots()
+
+    ax.axis('equal')
+    plotNormalize = matplotlib.colors.Normalize()
+
+    patchList = []
+
+    for contour in polygons:
+        if plot3D:
+            ax.plot(contour[:, 0], contour[:, 1], zs=zPos, color=lineColor, linewidth=lineWidth)
+        else:
+            if plotFilled:
+                polygon = matplotlib.patches.Polygon(contour, fill=True, linewidth=lineWidth, edgecolor=lineColor, color=fillColor, facecolor=fillColor)
+                ax.add_patch(polygon)
+                patchList.append(polygon)
+
+            else:
+                ax.plot(contour[:, 0], contour[:, 1], color=lineColor, linewidth=lineWidth)
+
+    #p = mc.PatchCollection(patchList, alpha=1)
+    #ax.add_collection(p)
+
+    return fig, ax
+
+
 def plot(layer , zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows=False,
          plotOrderLine=False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
@@ -46,8 +100,8 @@ def plot(layer , zPos=0, plotContours=True, plotHatches=True, plotPoints=True, p
 
             hatches = np.vstack([hatchGeom.coords.reshape(-1, 2, 2) for hatchGeom in layer.getHatchGeometry()])
 
-            lc = mc.LineCollection(hatches, colors = plt.cm.rainbow(plotNormalize(np.arange(len(hatches)))),
-                                            linewidths = 0.5)
+            lc = mc.LineCollection(hatches, colors=plt.cm.rainbow(plotNormalize(np.arange(len(hatches)))),
+                                            linewidths=0.5)
 
             if plotArrows and not plot3D:
                 for hatch in hatches:
