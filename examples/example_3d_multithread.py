@@ -48,7 +48,6 @@ def calculateLayer(input):
 def main():
     set_start_method("spawn")
 
-
     # Imports the part and sets the geometry to  an STL file (frameGuide.stl)
     solidPart = pyslm.Part('inversePyramid')
     solidPart.setGeometry('../models/inversePyramid.stl')
