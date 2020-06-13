@@ -328,9 +328,10 @@ class Part(DocumentObject):
         """
         The vector slice is created by using trimesh to slice the mesh into a polygon
 
-        :param returnCoordPath:
+        :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise a list of
+        closed Shapely Polygons
         :param z: Slice z-position
-        :return: Vector slice
+        :return: The vector slice at the given z level
         """
         if not self.geometry:
             raise ValueError('Geometry was not set')
@@ -383,29 +384,50 @@ class Part(DocumentObject):
 
         return paths
 
-    def getBitmapSlice(self, z, resolution):
-        # Get slice returns the current bitmap slice for a mesh at z position
-        # Construct a merged grid for this layer (fixed layer)
-        gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
+    def getBitmapSlice(self, z: float, resolution: float,  origin = None) -> np.ndarray:
+        """
+        Returns a bitmap (binary) image of the slice at position z.
 
-        sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
+        :param z: The z-position to take the slcie from
+        :param resolution: The resolution of the bitmap to generate [pixels/length unit]
+        :param origin: The offest for (0,0) in the bitmap image - defaults to the bounding box minimumm(optional)
 
-        # ToDO for now assume an empty slice -> should be a None Type
-        if z < self.boundingBox[2] and z > self.boundingBox[4]:
+        :return: A bitmap image for the current slice at position
+        """
+
+        vectorSlice = self.getVectorSlice(z, False)
+
+        bitmapOrigin =  self.boundingBox[:2] if origin is None else origin
+
+        sliceImage = vectorSlice.rasterize(pitch=resolution, origin=bitmapOrigin)
+        return np.array(sliceImage)
+
+
+        if False:
+            # Old reference implementation will be removed in future
+
+            # Get slice returns the current bitmap slice for a mesh at z position
+            # Construct a merged grid for this layer (fixed layer)
+            gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
+
+            sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
+
+            # ToDO for now assume an empty slice -> should be a None Type
+            if z < self.boundingBox[2] and z > self.boundingBox[4]:
+                return sliceImg
+
+            polys = self.getVectorSlice(z)
+
+            gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
+            sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
+
+            for poly in polys:
+                bounds = self._geometry.bounds
+                localOffset, grid, gridPoints = trimesh.path.raster.rasterize_polygon(poly, resolution)
+
+                startPos = np.floor((localOffset - bounds[0, :2]) / resolution).astype(np.int)
+                endPos = (startPos + grid.shape).astype(np.int)
+
+                sliceImg[startPos[0]:endPos[0], startPos[1]:endPos[1]] += grid
+
             return sliceImg
-
-        polys = self.getVectorSlice(z)
-
-        gridSize = (self.geometry.extents[:2] / resolution) + 1  # Padded to prevent rounding issues
-        sliceImg = np.zeros(gridSize.astype(dtype=np.int), dtype=np.bool)
-
-        for poly in polys:
-            bounds = self._geometry.bounds
-            localOffset, grid, gridPoints = trimesh.path.polygons.rasterize_polygon(poly, resolution)
-
-            startPos = np.floor((localOffset - bounds[0, :2]) / resolution).astype(np.int)
-            endPos = (startPos + grid.shape).astype(np.int)
-
-            sliceImg[startPos[0]:endPos[0], startPos[1]:endPos[1]] += grid
-
-        return sliceImg
