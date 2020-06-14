@@ -1,6 +1,7 @@
 import abc
 import time
 from typing import Any, Tuple, List
+
 from skimage.measure import approximate_polygon, subdivide_polygon
 
 import numpy as np
@@ -9,8 +10,90 @@ from pyslm import pyclipper
 
 from shapely.geometry import Polygon as ShapelyPolygon
 from .sorting import AlternateSort, BaseSort, LinearSort
-from ..geometry import Layer, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
+from ..geometry import Layer, Model, LayerGeometry, ContourGeometry, HatchGeometry, PointsGeometry
 
+
+def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: bool = True):
+    """
+    A utility method to return a list of exposure points given a :class:`Layer` with an associated :class:`Model`
+    which contains the :class:`BuildStyle` that provides the point exposure distance or an effective laser speed to
+    spatially discretise the scan vectors into a series of points. If the optional parameter `includePowerDeposited` is
+    set to True, the laser power deposited in included. Note the :attr:`BuildStyle.pointDistance` parameter must
+    be set or this method will fail.
+
+    :param layer: The layer to process
+    :param models: A list of models containing buildstyles which are referenced with the layer's :class:`LayerGeometry`
+    :param includePowerDeposited: Set to true to return the calculated power deposited.
+
+    :return: Returns a list of coordinates (nx2) in the global domain with an optional power deposited.
+    """
+
+    if not isinstance(models, list):
+        models = [models]
+
+    exposurePoints = []
+
+
+    for layerGeom in layer.geometry:
+
+        # Get the model given the mid
+        model = next(x for x in models if x.mid == layerGeom.mid)
+
+        #Get the buildstyle from the model
+        buildStyle = next(x for x in model.buildStyles if x.bid == layerGeom.bid)
+
+        if buildStyle.pointDistance < 1:
+            raise ValueError('The point distance parameter in the buildstyle (mid: {:d}, bid: {:d}) must be set'.format(model.mid, buildStyle.bid))
+
+        pointDistance = buildStyle.pointDistance * 1e-3 # Convert to mm
+        energyPerExposure = buildStyle.laserPower * (buildStyle.pointExposureTime * 1e-6) # convert to mu s
+
+        if isinstance(layerGeom, HatchGeometry):
+
+            # Calcualte the length of the hatch vector and the direction
+            coords = layerGeom.coords.reshape(-1, 2, 2)
+            delta = np.diff(coords, axis=1).reshape(-1, 2)
+            lineDist = np.hypot(delta[:, 0], delta[:, 1]).reshape(-1, 1)
+
+            # Normalise each scan vector direction
+            dir = -1.0 * delta / lineDist
+
+            # Calculate the number of exposure points across the hatch vector based on its length
+            numPoints = np.ceil(lineDist / pointDistance).astype(np.int)
+
+            # Pre-populate some arrays to extrapolate the exposure points from
+            totalPoints = int(np.sum(numPoints))
+            idxArray = np.zeros([totalPoints, 1])
+            pntsArray = np.zeros([totalPoints, 2])
+            dirArray = np.zeros([totalPoints, 2])
+
+            # Take the first coordinate
+            p0 = coords[:, 1, :].reshape(-1, 2)
+
+            idx = 0
+            for i in range(len(numPoints)):
+                j = int(numPoints[i])
+                idxArray[idx:idx + j, 0] = np.arange(0, j)
+                pntsArray[idx:idx + j] = p0[i]
+                dirArray[idx:idx + j] = dir[i]
+                idx += j
+
+            # Calculate the hatch exposure points
+            hatchExposurePoints = pntsArray + pointDistance * idxArray * dirArray
+
+            # Add an extra column for the energy deposited per exposure
+            if includePowerDeposited:
+                col = np.ones([len(hatchExposurePoints),1])
+                col[:] = energyPerExposure
+
+                hatchExposurePoints = np.hstack([hatchExposurePoints, col])
+
+            # append to the list
+            exposurePoints.append(hatchExposurePoints)
+
+    exposurePoints = np.vstack(exposurePoints)
+
+    return exposurePoints
 
 class BaseHatcher(abc.ABC):
     """
