@@ -6,7 +6,9 @@ import matplotlib.collections as mc
 
 import numpy as np
 
+from .core import Part
 from .geometry import Layer
+
 
 def plotPolygon(polygons, zPos=0.0, lineColor='k', lineWidth=0.7, fillColor='r',
                 plot3D=False, plotFilled=False,
@@ -172,3 +174,42 @@ def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=T
             ax.scatter(pointsGeom.coords[:, 0], pointsGeom.coords[:, 1], 'x')
 
     return fig, ax
+
+
+def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution = 0.25) -> Tuple[plt.Figure, plt.Axes]:
+    """
+    Plots an effective heat map given the exposure points and at a given z position. The heatmap is discretised by
+    summing the energy input of all exposure points onto an image and then capturing the aerial heat input by dividing
+    by the pixel area.
+
+    :param part: The part that as been sliced.
+    :param z: The layer z-position to slice
+    :param exposurePoints: (nx3) array of exposure points
+    :param resolution: resolution to generate the heatmap to process on
+    """
+
+    fig, ax = plt.subplots()
+    ax.axis('equal')
+
+    bitmap = part.getBitmapSlice(z, 0.1)
+    offset = part.boundingBox[:2]
+
+    if exposurePoints.shape[1] != 3:
+        raise ValueError('Exposure points must include energy deposited i.e. 3rd column')
+
+    # Offset the coordinates based on the resolution and the bounding box of the part
+    exposurePoints[:, :2] -= part.boundingBox[:2] + resolution / 2
+    expPointTrans = np.floor(exposurePoints[:, :2] / resolution).astype(np.int)
+
+    # Get a bitmap object to work on
+    bitmapSlice  = part.getBitmapSlice(z, resolution).astype(np.int)
+    slice = np.zeros(bitmapSlice.shape)
+
+    for i in range(len(expPointTrans)):
+        slice[expPointTrans[i,1], expPointTrans[i,0]] += exposurePoints[i,2]
+
+    slice /= resolution*resolution
+
+    ax.imshow(slice, origin='lower', cmap='hot', interpolation='nearest')
+
+    return (fig, ax)
