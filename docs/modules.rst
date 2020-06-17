@@ -8,11 +8,6 @@
     :no-inherited-members:
     :skip: ABC, Enum, auto, BuildStyle, Header, Model, Layer, LayerGeometry, ContourGeometry, PointsGeometry, HatchGeometry
 
-.. automodapi:: pyslm.geometry
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: Enum, auto
-
 .. automodapi:: pyslm.analysis
     :no-inheritance-diagram:
     :no-inherited-members:
