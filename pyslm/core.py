@@ -5,6 +5,7 @@ import trimesh
 from abc import ABC
 from typing import Any, List, Tuple
 
+from shapely.geometry import Polygon
 
 class DocumentObject(ABC):
 
@@ -324,7 +325,8 @@ class Part(DocumentObject):
     def partType(self):
         return self._partType
 
-    def getVectorSlice(self, z: float, returnCoordPaths: bool = True) -> Any:
+    def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
+                       simplificationFactor = None, simplificationPreserveTopology = True) -> Any:
         """
         The vector slice is created by using trimesh to slice the mesh into a polygon
 
@@ -359,22 +361,33 @@ class Part(DocumentObject):
             # Repairs the polygon boundary using a merge function built into Trimesh
             planarSection.fill_gaps(planarSection.scale / 100)
 
-        if returnCoordPaths:
-            return self.path2DToPathList(planarSection)
-        else:
-            return planarSection
+        # Obtain a closed list of shapely polygons
+        polygons = planarSection.polygons_full
 
-    def path2DToPathList(self, shape: trimesh.path.Path2D) -> List[np.ndarray]:
+        if simplificationFactor:
+            simpPolys = []
+
+            for polygon in  polygons:
+                simpPolys.append(polygon.simplify(simplificationFactor, preserve_topology=simplificationPreserveTopology))
+
+            polygons = simpPolys
+
+        if returnCoordPaths:
+            return self.path2DToPathList(polygons)
+        else:
+            return polygons
+
+    def path2DToPathList(self, shapes: List[Polygon]) -> List[np.ndarray]:
         """
         Returns the list of paths and coordinates from a cross-section (i.e. Trimesh Path2D). This is required to be
         done for performing boolean operations and offsetting with the PyClipper package
 
-        :param shape: A Trimesh Path2D representing a cross-section or container of closed polygons
+        :param shape: A list of shapely polygons  representing a cross-section or container of closed polygons
         :return: A list of paths (Numpy Coordinate Arrays) describing fully closed and oriented paths.
         """
         paths = []
 
-        for poly in shape.polygons_full:
+        for poly in shapes:
             coords = np.array(poly.exterior.coords)
             paths.append(coords)
 

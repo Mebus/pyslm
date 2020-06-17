@@ -50,7 +50,7 @@ def getExposurePoints(layer: Layer, models: List[Model], includePowerDeposited: 
 
         if isinstance(layerGeom, HatchGeometry):
 
-            # Calcualte the length of the hatch vector and the direction
+            # Calculate the length of the hatch vector and the direction
             coords = layerGeom.coords.reshape(-1, 2, 2)
             delta = np.diff(coords, axis=1).reshape(-1, 2)
             lineDist = np.hypot(delta[:, 0], delta[:, 1]).reshape(-1, 1)
