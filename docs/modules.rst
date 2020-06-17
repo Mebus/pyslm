@@ -6,7 +6,7 @@
     :skip: ABC, Enum, auto
 
 .. automodapi:: pyslm.hatching
-    :allowed-package-names: BaseSort, AlternateSort, GreedySort, LinearSort, BaseHatcher, Hatcher, StripeHatcher, IslandHatcher
+    :allowed-package-names: BaseSort, AlternateSort, GreedySort, LinearSort, BaseHatcher, Hatcher, StripeHatcher, BasicIslandHatcher, InnerHatchRegion
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
