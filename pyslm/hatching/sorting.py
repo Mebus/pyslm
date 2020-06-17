@@ -46,7 +46,7 @@ class AlternateSort(BaseSort):
 class LinearSort(BaseSort):
     """
     A linear sort approaches to sorting the scan vectors based on the current hatch angle specified in
-    :attribute:`pyslm.hatching.sorting.LinearSort.hatchAngle`. The approach takes the dot product of the hatch mid-point
+    :attr:`pyslm.hatching.sorting.LinearSort.hatchAngle`. The approach takes the dot product of the hatch mid-point
     and the projection along the X-axis is sorted in ascending order (+ve X direction).
     """
 
