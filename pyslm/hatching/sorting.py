@@ -85,11 +85,11 @@ class LinearSort(BaseSort):
 
 class GreedySort(BaseSort):
     """
-    The greedy sort approach is a heuristic approach to sorting the scan vectors based on the current hatch angle specified in
-    :attribute:`pyslm.hatching.sorting.LinearSort.hatchAngle` and clustering vectors together based on the hatch group
-     distance - :attribute:`pyslm.hatching.sorting.LinearSort.hatchTol`. Typically the
+    The greedy sort approach is a heuristic approach to sorting the scan vectors based on the current hatch angle
+    specified in :attr:`pyslm.hatching.sorting.LinearSort.hatchAngle` and clustering vectors together based on the
+    hatch group distance - :attr:`pyslm.hatching.sorting.LinearSort.hatchTol`.
 
-     The approach finds clusters of scan vectors based on their connectivity based on a threshold
+    The approach finds clusters of scan vectors based on their connectivity based on a threshold
     """
     def __init__(self, hatchAngle = 0.0, hatchTol = None):
 
@@ -119,7 +119,7 @@ class GreedySort(BaseSort):
 
     @property
     def hatchTol(self):
-        """  The hatch group tolerance specifies the abritrary distance used for grouping the scan vectors into
+        """  The hatch group tolerance specifies the arbitrary distance used for grouping the scan vectors into
         'scanning clusters'"""
         return self._hatchTol
 

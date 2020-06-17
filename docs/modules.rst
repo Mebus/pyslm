@@ -12,7 +12,6 @@
     :toctree: api
     :skip: ABC, Enum, auto, BuildStyle, Header, Model, Layer, LayerGeometry, ContourGeometry, PointsGeometry, HatchGeometry
 
-
 .. automodapi:: pyslm.geometry
     :allowed-package-names: ContourGeometry, HatchGeometry, PointsGeometry, LayerGeometry, Layer, Header, BuildStyle, Model
     :no-inheritance-diagram:

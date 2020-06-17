@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to PySLM's documentation!
-==================================
+=====================================
 
 Links
 ==========
@@ -15,8 +15,6 @@ Install
 ==========
 .. toctree::
    :maxdepth: 2
-
-   install
 
 Module Reference
 ==================
@@ -29,5 +27,4 @@ Module Reference
 ==================
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
 

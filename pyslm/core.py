@@ -330,10 +330,10 @@ class Part(DocumentObject):
         """
         The vector slice is created by using trimesh to slice the mesh into a polygon
 
-        :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise a list of
-        closed Shapely Polygons
+        :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise Shapely Polygons
         :param z: Slice z-position
         :return: The vector slice at the given z level
+
         """
         if not self.geometry:
             raise ValueError('Geometry was not set')
