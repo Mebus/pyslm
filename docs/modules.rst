@@ -1,11 +1,9 @@
 .. automodapi:: pyslm.core
-    :allowed-package-names: DocumentObject, Part
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
 
 .. automodapi:: pyslm.hatching
-    :allowed-package-names: BaseSort, AlternateSort, GreedySort, LinearSort, BaseHatcher, Hatcher, StripeHatcher, IslandHatcher
     :no-inheritance-diagram:
     :no-inherited-members:
     :toctree: api
