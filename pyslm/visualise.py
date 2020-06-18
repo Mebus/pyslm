@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Any, List, Tuple, Optional
 
 import matplotlib.pyplot as plt
 import matplotlib.colors
@@ -10,8 +10,9 @@ from .core import Part
 from .geometry import Layer
 
 
-def plotPolygon(polygons, zPos=0.0, lineColor='k', lineWidth=0.7, fillColor='r',
-                plot3D=False, plotFilled=False,
+def plotPolygon(polygons, zPos=0.0,
+                lineColor: Optional[Any] = 'k', lineWidth: Optional[float] = 0.7, fillColor: Optional[Any] = 'r',
+                plot3D: Optional[bool] = False, plotFilled: Optional[bool] = False,
                 handle: Tuple[plt.Figure, plt.Axes] = None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Helper method for plotting polygons (numpy coordinates) and those composed of Python lists.
@@ -62,8 +63,21 @@ def plotPolygon(polygons, zPos=0.0, lineColor='k', lineWidth=0.7, fillColor='r',
 
     return fig, ax
 
-def plotLayers(layers: List[Layer], plotContours=True, plotHatches=True, plotPoints=True, plotOrderLine=False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
 
+def plotLayers(layers: List[Layer],
+               plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
+               plotOrderLine: Optional[bool] = False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
+    """
+    Plots a list of :class:`Layer`, specifically the scan vectors (contours and hatches) and point exposures for each
+    :class:`LayerGeometry using `Matplotlib`. The Layer may be plotted in 3D by setting the plot3D parameter.
+
+    :param layers: A list of :class:`Layer`
+    :param plotContours: Plots the inner hatch scan vectors. Defaults to `True`
+    :param plotHatches: Plots the hatch scan vectors
+    :param plotPoints: Plots point exposures
+    :param plotOrderLine: Plots an additional line showing the order of vector scanning
+    :param handle: Matplotlib handle to re-use
+    """
     if handle:
         fig = handle[0]
         ax = handle[1]
@@ -72,15 +86,19 @@ def plotLayers(layers: List[Layer], plotContours=True, plotHatches=True, plotPoi
         ax = plt.axes(projection='3d')
 
     for layer in layers:
-        fig, ax = plot(layer, layer.z/1000, plot3D=True, plotContours=plotContours, plotHatches=plotHatches, plotPoints=plotPoints, handle = (fig,ax))
+        fig, ax = plot(layer, layer.z/1000,
+                       plot3D=True, plotContours=plotContours, plotHatches=plotHatches, plotPoints=plotPoints,
+                       handle=(fig,ax))
 
-def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=True, plot3D=True, plotArrows=False,
-         plotOrderLine=False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
+def plot(layer: Layer, zPos:Optional[float] = 0,
+         plotContours: Optional[bool] = True, plotHatches: Optional[bool] = True, plotPoints: Optional[bool] = True,
+         plot3D: Optional[bool] = True, plotArrows: Optional[bool] = False, plotOrderLine: Optional[bool] = False,
+         handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots the all the scan vectors (contours and hatches) and point exposures for each Layer Geometry in a Layer
-    using `Matplotlib`. The Layer may be plotted in 3D by setting the plot3D parameter.
+    using `Matplotlib`. The :class:`Layer` may be plotted in 3D by setting the plot3D parameter.
 
-    :param layer: The Layer containing the Layer Geometry
+    :param layer: A single :class:`Layer` containing a set of various  :class:`LayerGeometry` objects
     :param zPos: The position of the layer when using the 3D plot (optional)
     :param plotContours: Plots the inner hatch scan vectors. Defaults to `True`
     :param plotHatches: Plots the hatch scan vectors
@@ -104,7 +122,6 @@ def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=T
         else:
             fig, ax = plt.subplots()
             ax.axis('equal')
-
 
     plotNormalize = matplotlib.colors.Normalize()
 
@@ -176,7 +193,7 @@ def plot(layer: Layer, zPos=0, plotContours=True, plotHatches=True, plotPoints=T
     return fig, ax
 
 
-def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution = 0.25) -> Tuple[plt.Figure, plt.Axes]:
+def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution:float = 0.25) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots an effective heat map given the exposure points and at a given z position. The heatmap is discretised by
     summing the energy input of all exposure points onto an image and then capturing the aerial heat input by dividing
@@ -212,4 +229,4 @@ def plotHeatMap(part: Part, z: float, exposurePoints: np.ndarray, resolution = 0
 
     ax.imshow(slice, origin='lower', cmap='hot', interpolation='nearest')
 
-    return (fig, ax)
+    return fig, ax

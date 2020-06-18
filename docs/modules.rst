@@ -1,3 +1,8 @@
+.. automodapi:: pyslm.analysis
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :toctree: api
+
 .. automodapi:: pyslm.core
     :no-inheritance-diagram:
     :no-inherited-members:
