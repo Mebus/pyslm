@@ -3,7 +3,7 @@ import networkx as nx
 import trimesh
 
 from abc import ABC
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from shapely.geometry import Polygon
 
@@ -131,7 +131,7 @@ class Document:
     @property
     def partBoundingBox(self):
         """
-        Returns the bounding box for all the parts. This is needed for calculating the grid
+        An (nx6) array containing the bounding box for all the parts. This is needed for calculating the grid
         """
         pbbox = np.vstack([part.boundingBox for part in self.parts])
         return np.hstack([np.min(pbbox[:, :3], axis=0), np.max(pbbox[:, 3:], axis=0)])
@@ -157,16 +157,17 @@ class Part(DocumentObject):
     be sliced as part of a document tree structure.
 
     The part can be transformed and has a position (:attr:`Part.origin`),
-    rotation (:attr:`Part.rotation`)  and additional scale factor (:attr:`Part.scaleFactor`)  which is applied to the
-    geometry in its local coordinate system. Changing the geometry using :meth:`Part.setGeometryByMesh` or
-    :meth:`Part.setGeoemtry` along with any of the transformation attributes will set the part dirty and will be
-    recomputed on the next call to obtain the :attr:`Part.geometry`.
+    rotation (:attr:`Part.rotation`)  and additional scale factor (:attr:`Part.scaleFactor`), which are collectively
+     applied to the geometry in its local coordinate system :math:`(x,y,z)`. Changing the geometry using
+    :meth:`Part.setGeometryByMesh` or :meth:`Part.setGeometry` along with any of the transformation attributes will set
+    the part dirty and forcing the transformation and geometry to be re-computed on the next call inorder to obtain
+    the :attr:`Part.geometry`.
 
-    Generallly for AM and 3D printing the following function :meth:`Part.getVectorSlice` is  the most useful method
-    providing the user with a slice for a given z-plane containing the boundaries consisting of a series of polygons.
-    The ouptut from this function is either a list of closed paths (coordinates) or a list of
-    :class:Shapely.geometry.Polygon`.
-    t
+    Generally for AM and 3D printing the following function :meth:`Part.getVectorSlice` is the most useful. This method
+    provides the user with a slice for a given z-plane containing the boundaries consisting of a series of polygons.
+    The output from this function is either a list of closed paths (coordinates) or a list of
+    :class:`shapely.geometry.Polygon`. A bitmap slice can alternatively be obtained for certain AM process using
+    :meth:`Part.getBitmapSlice` in similar manner.
     """
 
     def __init__(self, name):
@@ -190,17 +191,19 @@ class Part(DocumentObject):
 
     def isDirty(self) -> bool:
         """
-        When a transformation or the geometry object has been changed via methods in the :class:`Part`
+        When a transformation or the geometry object has been changed via methods in the :class:`Part`,
         the state is toggled dirty and the transformation matrix must be re-applied to generate a new internal
-        representation.
+        representation of the geometry , which is then cached for future use.
 
         :return: The current state of the geometry
         """
+
         return self._dirty
 
     @property
     def rotation(self) -> np.ndarray:
-        """ The rotation of the part is a 1x3 array representing the rotations in degrees about X,Y,Z in that order. """
+        """ The rotation of the part is a 1x3 array representing the rotations :math:`(\\alpha, \\beta, \\gamma)`
+        in degrees about X, Y, Z, applied sequentially in that order. """
         return self._rotation
 
     @rotation.setter
@@ -215,8 +218,8 @@ class Part(DocumentObject):
         self._dirty = True
 
     @property
-    def origin(self):
-        """ The origin or the translation of the part."""
+    def origin(self) -> np.ndarray:
+        """ The origin or the translation of the :class:`Part`."""
         return self._origin
 
     @origin.setter
@@ -232,21 +235,21 @@ class Part(DocumentObject):
 
     @property
     def scaleFactor(self) -> np.ndarray:
+        """
+        The scale factor is a 1x3 matrix :math:`(S_x, S_y, S_z)` representing the scale factor of the :class:`Part`.
+        """
         return self._scaleFactor
 
     @scaleFactor.setter
     def scaleFactor(self, sf: Any):
 
-        if isinstance(sf, float):
-            self._scaleFactor = np.array([sf, sf, sf])
-        else:
-            self._scaleFactor = sf
+        self._scaleFactor = np.asanyarray(sf)
 
         self._dirty = True
 
-    def dropToPlatform(self, zPos=0.0) -> None:
+    def dropToPlatform(self, zPos: Optional[float] = 0.0) -> None:
         """
-        Drops the part a set height (parameter zPos) from its lowest point to a the platform (assumed :math:`z=0`).
+        Drops the part at a set height (parameter zPos) from its lowest point from the platform (assumed :math:`z=0`).
 
         :param zPos: The position the bottom of the part should be suspended above :math:`z=0`
         """
@@ -256,8 +259,8 @@ class Part(DocumentObject):
 
     def getTransform(self) -> np.ndarray:
         """
-        Returns the transformation matrix used for the Part consisting of a translation (:attr:`Part.origin`)
-        rotation :attr:`Part.rotation` and scale factor :attr:`Part.transform`
+        Returns the transformation matrix (3x3 numpy matrix) used for the :class:`Part` consisting of a translation
+        (:attr:`Part.origin`), a rotation :attr:`Part.rotation` and a scale factor :attr:`Part.scaleFactor`
         """
 
         Sx = trimesh.transformations.scale_matrix(factor = self._scaleFactor[0], direction=[1,0,0])
@@ -276,9 +279,10 @@ class Part(DocumentObject):
 
     def setGeometry(self, filename: str) -> None:
         """
-        Sets the Part geometry based on a mesh filename which is a file type compatible with the imports in trimesh.
+        Sets the Part geometry based on a mesh filename.The mes must have a compatible file that can be
+        imported via `trimesh`.
 
-        :param filename: Mesh filename
+        :param filename: The mesh filename
         """
         self._geometry = trimesh.load_mesh(filename, use_embree=False, process=True, Validate_faces=False)
 
@@ -315,20 +319,32 @@ class Part(DocumentObject):
 
     @property
     def boundingBox(self) -> np.ndarray:  # const
-        """ The bounding box of the geometry transformed in the global coordinate frame."""
+        """
+        The bounding box of the geometry transformed in the global coordinate frame :math:`(X,Y,Z). The bounding
+        box is a 1x6 array consisting of the minimum coordinates followed by the maximum coordinates for the corners of
+        the bounding box.
+
+        """
+
         if not self.geometry:
             raise ValueError('Geometry was not set')
         else:
             return  self.geometry.bounds.flatten()
 
     @property
-    def partType(self):
+    def partType(self) -> str:
+        """
+        Returns the part type
+
+        :return: The part type
+        """
+
         return self._partType
 
     def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
-                       simplificationFactor = None, simplificationPreserveTopology = True) -> Any:
+                       simplificationFactor = None, simplificationPreserveTopology: Optional[bool] = True) -> Any:
         """
-        The vector slice is created by using trimesh to slice the mesh into a polygon
+        The vector slice is created by using `trimesh` to slice the mesh into a polygon
 
         :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise Shapely Polygons
         :param z: Slice z-position
@@ -382,7 +398,8 @@ class Part(DocumentObject):
         Returns the list of paths and coordinates from a cross-section (i.e. Trimesh Path2D). This is required to be
         done for performing boolean operations and offsetting with the PyClipper package
 
-        :param shape: A list of shapely polygons  representing a cross-section or container of closed polygons
+        :param shapes: A list of :class:`shapely.geometry.Polygon` representing a cross-section or container of
+                        closed polygons
         :return: A list of paths (Numpy Coordinate Arrays) describing fully closed and oriented paths.
         """
         paths = []
@@ -397,13 +414,14 @@ class Part(DocumentObject):
 
         return paths
 
-    def getBitmapSlice(self, z: float, resolution: float,  origin = None) -> np.ndarray:
+    def getBitmapSlice(self, z: float, resolution: float,  origin: Optional = None) -> np.ndarray:
         """
-        Returns a bitmap (binary) image of the slice at position z.
+        Returns a bitmap (binary) image of the slice at position :math:`z` position. The resolution paramter
+        is used to control the size of the image returned.
 
-        :param z: The z-position to take the slcie from
+        :param z: The z-position to take the slice from
         :param resolution: The resolution of the bitmap to generate [pixels/length unit]
-        :param origin: The offest for (0,0) in the bitmap image - defaults to the bounding box minimumm(optional)
+        :param origin: The offset for (0,0) in the bitmap image - defaults to the bounding box minimumm(optional)
 
         :return: A bitmap image for the current slice at position
         """
