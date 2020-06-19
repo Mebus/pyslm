@@ -66,15 +66,22 @@ resolution = 0.2
 # specific in the specific model buildstyle assigned to each layer geometry
 exposurePoints = pyslm.hatching.getExposurePoints(layer, model)
 
-# Plot all the exposure points
-plt.scatter(exposurePoints[:,0], exposurePoints[:,1], marker='o', linestyle='None')
+
 
 # Plot the heatmap based on the point exposure and the chosen resolution
 # Currently the part and z-layer is required to generate a bitmap which covers the part geometry.
-fig, ax = pyslm.visualise.plotHeatMap(solidPart, z, exposurePoints,  resolution)
+#fig, ax = pyslm.visualise.plotHeatMap(solidPart, z, exposurePoints,  resolution)
+
+# Plot all the exposure points
+fig, ax = plt.subplots()
+ax.axis('equal')
+
+plt.scatter(exposurePoints[:,0], exposurePoints[:,1], marker='o', linestyle='None')
+
+# Plot the exposure points
+pyslm.visualise.plot(layer, plot3D=False, handle=(fig,ax))
+
 
 # Plot the corresponding layers
 pyslm.visualise.plot(layer, plot3D=False, plotOrderLine=True, plotArrows=False)
 
-# Plot the exposure points
-fig, ax = pyslm.visualise.plot(layer, plot3D=False)
