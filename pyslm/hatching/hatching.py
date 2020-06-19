@@ -100,21 +100,19 @@ class BaseHatcher(abc.ABC):
     The BaseHatcher class provides common methods used for generating the 'contour' and infill 'hatch' scan vectors.
 
     The class provides an interface tp generate a variety of hatching patterns used. The developer should re-implement a
-    subclass and re-define the abstract method, :meth:`BaseHatcher.hatch`, which will be called.
+    subclass and re-define the abstract method, :~meth:`BaseHatcher.hatch`, which will be called.
 
     The user typically specifies a boundary, which may be offset the boundary of region using
-    :meth:`~BaseHatcher,offsetBoundary`.
-    This is typically performed before generating the infill.  Following offsetting, the a series of hatch lines are
-    generated using :meth:`~BaseHatcher.generateHatching` to fill the entire boundary region using
-    :meth:`~BaseHatcher.polygonBoundingBox`.  To obtain the final clipped in-fill, the hatches are clipped using
-    :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are generated using a technique
+    :meth:`~BaseHatcher.offsetBoundary`. This is typically performed before generating the infill.
+     Following offsetting, the a series of hatch lines are generated using :meth:`~BaseHatcher.generateHatching` to fill
+    the entire boundary region using :meth:`~BaseHatcher.polygonBoundingBox`. To obtain the final clipped in-fill, the
+    hatches are clipped using :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are generated using a technique
     explained further in the class method. The generated scan paths should be stored into collections of LayerGeometry
     accordingly.
 
-    For all polygon manipulation operations, this calls provides automatic conversion to the integer coordinate system
-    used by ClipperLib by internally calling :meth:`~BaseHatcher.scaleToClipper` and
-    :meth:`~BaseHatcher.scaleFromClipper`.
-
+    For all polygon manipulation operations used for offsetting and clipping, internally this calls provides automatic
+    conversion to the integer coordinate system used by ClipperLib by internally calling
+    :meth:`~BaseHatcher.scaleToClipper` and :meth:`~BaseHatcher.scaleFromClipper`.
     """
 
 
@@ -161,14 +159,14 @@ class BaseHatcher(abc.ABC):
 
     def offsetPolygons(self, polygons, offset: float):
         """
-        Offsets a set of boundaries across a collection of polygons.
+        Offsets a set of boundaries across a collection of polygons by the offset parameter.
 
         .. note::
             Note that if any polygons are expanded overlap with adjacent polygons, the offsetting will **NOT** unify
             into a single shape.
 
         :param polygons: A list of closed polygons which are individually offset from each other.
-        :param offset: The offset distance applied to the poylgon
+        :param offset: The offset distance applied to the polygon
         :return: A list of boundaries offset from the subject
         """
         return [self.offsetBoundary(poly, offset) for poly in polygons]
@@ -353,12 +351,13 @@ class BaseHatcher(abc.ABC):
         return np.transpose(np.dstack(coords), axes=[2, 0, 1])
 
     @abc.abstractmethod
-    def hatch(self, boundaryFeature):
+    def hatch(self, boundaryFeature) -> Layer:
         """
-        The hatch method should be re-implemented by a child class to
+        The hatch method should be re-implemented by a child class to generate a :class:`Layer` containing the scan
+        vectors used for manufacturing the layer.
 
         :param boundaryFeature: The collection of boundaries of closed polygons within a layer.
-        :raises: NotImplementedError
+        :raises: :class:`NotImplementedError`
         """
         raise NotImplementedError()
 
@@ -366,7 +365,7 @@ class BaseHatcher(abc.ABC):
 class InnerHatchRegion(abc.ABC):
     """
     The InnerHatchRegion class provides a representation for a single sub-region used for efficiently generating
-    various sub-scale hatch infills. This requires providing a boundary (:attr:`InnerHatchRegion.boundary`) to represent
+    various sub-scale hatch infills. This requires providing a boundary (:attr:`~InnerHatchRegion.boundary`) to represent
     the region used. The user typically in dervived :class:`BaseHatcher` class should set via
     :meth:`~InnerHatchRegion.setRequiresClipping` if the region requires further clipping.
 
@@ -431,7 +430,6 @@ class InnerHatchRegion(abc.ABC):
                       (s, c)])
         return R
 
-
     def rotationMatrix3D(self) -> np.ndarray:
         """
         Generates an affine matrix covering the transformation based on the origin and orientation based on a rotation
@@ -454,7 +452,8 @@ class InnerHatchRegion(abc.ABC):
     def orientation(self) -> float:
         """
         The orientation describes the rotation of the local coordinate system with respect to the global
-        coordinate system :math:`(x,y)`. The angle of rotation is given in rads. """
+        coordinate system :math:`(x,y)`. The angle of rotation is given in rads.
+        """
         return self._orientation
 
     @orientation.setter
@@ -463,7 +462,7 @@ class InnerHatchRegion(abc.ABC):
 
     @property
     def origin(self):
-        """ The origin is the :math:`(x\prime,y\prime)` position of of the local coordinate system. """
+        """ The origin is the :math:`(x\\prime,y\\prime)` position of of the local coordinate system. """
         return self._origin
 
     @origin.setter
@@ -472,7 +471,7 @@ class InnerHatchRegion(abc.ABC):
 
     def setIntersecting(self, intersectingState: bool) -> None:
         """
-        Setting True indicates the region has been interesecting
+        Setting True indicates the region has been intersected
 
         :param intersectingState: True if the region intersects
         """
@@ -491,7 +490,10 @@ class InnerHatchRegion(abc.ABC):
 
     @abc.abstractmethod
     def boundary(self) -> ShapelyPolygon:
-        """ The boundary of the internal region"""
+        """ The boundary of the internal region
+
+        :raises: :class:`NotImplementedError`
+        """
         raise NotImplementedError
 
     def isIntersecting(self) -> bool:
@@ -512,6 +514,8 @@ class InnerHatchRegion(abc.ABC):
         """
         The hatch method should provide a list of hatch vectors, within the boundary. This must  be re-implemented in
         the derived class. The hatch vectors should be ordered.
+
+        :raises: :class:`NotImplementedError`
         """
         raise NotImplementedError()
 
@@ -519,35 +523,30 @@ class InnerHatchRegion(abc.ABC):
 class Hatcher(BaseHatcher):
     """
     Provides a generic SLM Hatcher 'recipe' with standard parameters for defining the hatch across regions. This
-    includes generating multiple contour offsets and the generic infill  pattern. This class may be derived from
-    to provide additional or customised behavior.
+    includes generating multiple contour offsets and then a generic hatch infill pattern by re-implementing the
+    :meth:`BaseHatcher.hatch` method. This class may be derived from to provide additional or customised behavior.
     """
 
     def __init__(self):
 
         super().__init__()
 
-        # TODO check that the polygon boundary feature type
-        # Contour information
+        # Contour private attributes
         self._numInnerContours = 1
         self._numOuterContours = 1
         self._spotCompensation = 0.08  # mm
-        self._contourOffset = 1 * self._spotCompensation
+        self._contourOffset = 1.0 * self._spotCompensation
         self._volOffsetHatch = self._spotCompensation
-        self._clusterDistance = 5  # mm
 
-        # Hatch Information
+        # Hatch private attributes
         self._layerAngleIncrement = 0  # 66 + 2 / 3
         self._hatchDistance = 0.08  # mm
         self._hatchAngle = 45
         self._hatchSortMethod = None
 
-
     @property
     def hatchDistance(self) -> float:
-        """
-        The distance between hatch scan vectors.
-        """
+        """ The distance between adjacent hatch scan vectors. """
         return self._hatchDistance
 
     @hatchDistance.setter
@@ -556,7 +555,7 @@ class Hatcher(BaseHatcher):
 
     @property
     def hatchAngle(self) -> float:
-        """ The base hatch angle used for hatching the region in degrees [-180,180]."""
+        """ The base hatch angle used for hatching the region expressed in degrees :math:`[-180,180]`."""
         return self._hatchAngle
 
     @hatchAngle.setter
@@ -564,11 +563,11 @@ class Hatcher(BaseHatcher):
         self._hatchAngle = value
 
     @property
-    def layerAngleIncrement(self) ->float:
+    def layerAngleIncrement(self) -> float:
         """
         An additional offset used to increment the hatch angle between layers in degrees. This is typically set to
-        66.6 :math:`^{\circ}` per layer to provide additional uniformity of the scan vectors across multiple layers.
-        By default this is set to 0.0."""
+        66.6:math:`^{\circ}` per layer to provide additional uniformity of the scan vectors across multiple layers.
+        By default this is set to 0.0"""
         return self._layerAngleIncrement
 
     @layerAngleIncrement.setter
@@ -610,14 +609,6 @@ class Hatcher(BaseHatcher):
         self._numOuterContours = value
 
     @property
-    def clusterDistance(self):
-        return self._clusterDistance
-
-    @clusterDistance.setter
-    def clusterDistance(self, value):
-        self._clusterDistance = value
-
-    @property
     def spotCompensation(self) -> float:
         """
         The spot (laser point) compensation factor is the distance to offset the outer-boundary and other internal hatch
@@ -641,7 +632,12 @@ class Hatcher(BaseHatcher):
         self._volOffsetHatch = value
 
     def hatch(self, boundaryFeature):
+        """
+        Generates a series of contour or boundary offsets along with a basic full region internal hatch.
 
+        :param boundaryFeature: The collection of boundaries of closed polygons within a layer.
+        :return: A :class:`Layer` object containing a list of :class:`LayerGeometry` objects generated
+        """
         if len(boundaryFeature) == 0:
             return
 

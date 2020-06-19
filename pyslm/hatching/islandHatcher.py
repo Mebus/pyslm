@@ -1,4 +1,4 @@
-from typing import Any, Tuple, List
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -18,8 +18,9 @@ class Island(InnerHatchRegion):
     _boundary = None
     """ Private class attribute which is used to cache the boundary generated"""
 
-    def __init__(self, origin:np.ndarray = np.array([[0.0,0.0]]), orientation:float = 0.0,
-                       islandWidth:float = 0.0, islandOverlap:float = 0.0, hatchDistance:float = 0.1):
+    def __init__(self, origin:np.ndarray = np.array([[0.0,0.0]]), orientation: Optional[float] = 0.0,
+                       islandWidth: Optional[float] = 0.0, islandOverlap: Optional[float] = 0.0,
+                       hatchDistance: Optional[float] = 0.1):
 
         super().__init__()
 
@@ -36,7 +37,7 @@ class Island(InnerHatchRegion):
 
     @property
     def hatchDistance(self) -> float:
-        """ The distance between adjacent hatch vectors """
+        """ The distance between adjacent hatch vectors. """
         return self._hatchDistance
 
     @hatchDistance.setter
@@ -45,29 +46,29 @@ class Island(InnerHatchRegion):
 
     @property
     def islandWidth(self):
+        """ The square island width. """
         return self._islandWidth
 
     @islandWidth.setter
     def islandWidth(self, width):
-        """ The island width """
         self._islandWidth = width
 
     @property
-    def islandOverlap(self):
-        """ The length of overlap between adjacent islands"""
+    def islandOverlap(self) -> float:
+        """ The length of overlap between adjacent islands in both directions :math:`(x\\prime, y\\prime)`"""
         return self._islandOverlap
 
     @islandOverlap.setter
-    def islandOverlap(self, overlap):
+    def islandOverlap(self, overlap: float):
         self._islandOverlap = overlap
 
     def localBoundary(self) -> np.ndarray:
         """
-        Returns the local square boundary based on the island width (:attr:`Island.islandWidth`) and also the
+        Returns the local square boundary based on the island width (:attr:`~Island.islandWidth`) and also the
         island overlap (:attr:`Island.islandOverlap`. The island overlap provides an offset from the original boundary,
         so the user must compensate the actual overlap by a factor of a half. The boundary is cached into a static class
-        attribute since this remains constant typically across the entire hatching process. If the user desireds to
-        change this the user should re-implement the class and this method.
+        attribute :attr:Island._boundary` since this remains constant typically across the entire hatching process.
+        If the user desires to change this the user should re-implement the class and this method.
 
         :return: Coordinates representing the boundary
         """
@@ -76,7 +77,7 @@ class Island(InnerHatchRegion):
             sx = -self.islandOverlap
             sy = - self.islandOverlap
 
-            ex =  self._islandWidth + self.islandOverlap
+            ex = self._islandWidth + self.islandOverlap
             ey = self._islandWidth + self._islandOverlap
 
             # Generate a square island
@@ -90,8 +91,8 @@ class Island(InnerHatchRegion):
 
     def boundary(self) -> Polygon:
         """
-        Returns the transformed boundary obtained from :meth:`Island.localBoundary` into
-        the global coordinate system.
+        Returns the transformed boundary obtained from :meth:`~Island.localBoundary` into
+        the global coordinate system :math:`(X,Y)`.
 
         :return: Boundary polygon
         """
@@ -101,7 +102,7 @@ class Island(InnerHatchRegion):
 
     def generateInternalHatch(self, isOdd: bool=True) -> np.ndarray:
         """
-        Generates a set of hatches orthogonal to the island's coordinate system.
+        Generates a set of hatches orthogonal to the island's coordinate system :math:`(x\\prime, y\\prime)`.
 
         :param isOdd: The chosen orientation of the hatching
         :return: (nx3) Set of sorted hatch coordinates
@@ -131,10 +132,11 @@ class Island(InnerHatchRegion):
     def hatch(self):
         """
         Generates a set of hatches orthogonal to the island's coordinate system depending if the the sum of
-        :attr:`Island.posId` is even or odd. The returned hatch vectors are transformed and sorted depending on the
+        :attr:`~Island.posId` is even or odd. The returned hatch vectors are transformed and sorted depending on the
         direction.
 
-        :return: Transformed and ordered hatch vectors
+        :return: T
+        ransformed and ordered hatch vectors
         """
         isOdd = np.mod(sum(self.posId), 2)
         coords = self.generateInternalHatch(isOdd)
@@ -143,10 +145,10 @@ class Island(InnerHatchRegion):
 
 class IslandHatcher(Hatcher):
     """
-    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`.islandWidth`)
+    IslandHatcher extends the standard :class:`Hatcher` but generates a set of islands of fixed size (:attr:`~.islandWidth`)
     which covers a region.  This a common scan strategy adopted across SLM systems. This has the effect of limiting the
-    max length of the scan whilst by orientating the scan vectors orthogonal to each other mitigating any preferential
-    distortion or curling  in a single direction and any effects to micro-structure.
+    maximum length of the scan whilst by orientating the scan vectors orthogonal to each other mitigating any
+    preferential distortion or curling  in a single direction and any effects to micro-structure.
     """
 
     def __init__(self):
@@ -162,7 +164,7 @@ class IslandHatcher(Hatcher):
 
     @property
     def islandWidth(self) -> float:
-        """ The island width """
+        """ The island width. """
         return self._islandWidth
 
     @islandWidth.setter
@@ -171,7 +173,7 @@ class IslandHatcher(Hatcher):
 
     @property
     def islandOverlap(self) -> float:
-        """ The length of overlap between adjacent islands"""
+        """ The length of overlap between adjacent islands in both directions. """
         return self._islandOverlap
 
     @islandOverlap.setter
@@ -180,7 +182,10 @@ class IslandHatcher(Hatcher):
 
     @property
     def islandOffset(self) -> float:
-        """ The island offset is the relative distance (hatch spacing) to move the scan vectors between adjacent checkers. """
+        """
+        The island offset is the relative distance (hatch spacing) to move the scan vectors between
+        adjacent checkers.
+        """
         return self._islandOffset
 
     @islandOffset.setter
@@ -190,7 +195,7 @@ class IslandHatcher(Hatcher):
     def clipIslands(self, paths, pathSubjects):
         """
         Internal method which clips the boundaries of :class:`Island` obtained from :meth:`InnerHatchRegion.boundary`
-        with a list of paths.  It is not actually used but provided as a reference.
+        with a list of paths. It is not actually used but provided as a reference for users.
         """
 
         pc = pyclipper.Pyclipper()
@@ -411,8 +416,8 @@ class IslandHatcher(Hatcher):
 
     def intersectIslands(self, paths, islands: List[Island]) -> Tuple[Any, Any]:
         """
-        Perform the intersction and overlap tests on the island sub regions. This should be performed before any
-        clipping oerations are performed
+        Perform the intersection and overlap tests on the island sub regions. This should be performed before any
+        clipping operations are performed.
 
         :param paths: List of coordinates describing the boundary
         :param islands: A list of Islands to have the intersection and overlap test

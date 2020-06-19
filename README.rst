@@ -41,6 +41,8 @@ a single/multi point exposure by generating a series of scan vectors in a region
 **Slicing:**
 
 * Slicing of triangular meshes supported via the `Trimesh <https://github.com/mikedh/trimesh>`_ library.
+* Simplification of 2D layer boundaries
+* Bitmap slicing for SLA, DLP, Inkjet Systems
 
 **Hatching:**
 The following operations are provided as a convenience to aid developing the scan strategies:
@@ -63,7 +65,8 @@ of the scan strategies.
 
 Currently the capability to enable translation to commercial machine build platforms is being providing through a
 supporting library called `libSLM <https://github.com/drlukeparry/libSLM>`_ . This is a c++ library to enable efficient
-import and export across various commercial machine build files. Work is underway to support the following file formats
+import and export across various commercial machine build files. Work is underway to support the following file formats.
+If you would like to support implementing a custom format, please raise a `request <https://github.com/drlukeparry/pyslm/issue>`_.
 
 * Renishaw MTT (**.mtt**),
 * DMG Mori Realizer (**.rea**),
@@ -80,7 +83,8 @@ via PyPi and/or Anaconda distribution.
     conda install trimesh
 
 Installation of pySLM can then be performed using pre-built python packages using the PyPi repository. Additionally to
-interface with commercial systems, the user should install libSLM.
+interface with commercial systems, the user can choose to install libSLM. Note, the user should contact the author to
+request machine build file translators.
 
 .. code:: bash
     pip install libSLM
@@ -117,14 +121,14 @@ length generated in a region.
     myHatcher.stripeWidth = 5.0
 
     # Set the base hatching parameters which are generated within Hatcher
-    myHatcher.hatchAngle = 10
-    myHatcher.volumeOffsetHatch = 0.08
-    myHatcher.spotCompensation = 0.06
+    myHatcher.hatchAngle = 10 # [°]
+    myHatcher.volumeOffsetHatch = 0.08 # [mm]
+    myHatcher.spotCompensation = 0.06 # [mm]
     myHatcher.numInnerContours = 2
     myHatcher.numOuterContours = 1
 
     # Slice the object
-    geomSlice = solidPart.getVectorSlice(z, returnCoordPaths = True)
+    geomSlice = solidPart.getVectorSlice(z)
 
     #Perform the hatching operations
     layer = myHatcher.hatch(geomSlice)

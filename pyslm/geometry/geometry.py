@@ -3,10 +3,14 @@ import numpy as np
 from enum import Enum
 import abc
 
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 
 class Header:
+    """
+    The Header provides basic information about the machine build file, such as the name of the file
+    (:class:`~Header.filename`), version and the zUnit used for calculating the actual Layer z position in the machine.
+    """
     def __init__(self):
         self.filename = ""
         self.version = (0,0)
@@ -14,37 +18,128 @@ class Header:
 
 
 class BuildStyle:
+    """
+    A :class:`BuildStyle` represents a collection of laser parameters used for scanning across a single
+    :class:`LayerGeometry`. This consists of essential laser parameters including :attr:`~BuildStyle.laserPower`,
+    :attr:`~BuildStyle.laserSpeed`and for pulsed mode lasers -  :attr:`~BuildStyle.pointDistance` and
+    :attr:`~BuildStyle.pointExposureTime`. A unique buildstyle id (:attr:`~BuildStyle.bid`) must be within each
+    :class:`Model` group that it is stored in and later used for each LayerGeometry group.
+    """
 
     def __init__(self):
-        self.bid = 0
-        self.laserPower = 0.0
-        self.laserSpeed = 0.0
-        self.laserFocus = 0.0
-        self.pointDistance = 0
-        self.pointExposureTime = 0.0
+        self._bid = 0
+        self._laserPower = 0.0
+        self._laserSpeed = 0.0
+        self._laserFocus = 0.0
+        self._pointDistance = 0
+        self._pointExposureTime = 0.0
 
-    def setStyle(self, bid, focus, power,
-                 pointExposureTime, pointExposureDistance, speed = 0.0):
+    @property
+    def bid(self) -> int:
+        """ A unique id used for each BuildStyle object within each Model that can be referenced by a :class:`LayerGeometry. """
+        return self._bid
 
-        self.bid = bid
-        self.laserFocus = focus
-        self.laserPower = power
-        self.pointExposureTime = pointExposureTime
-        self.pointDistance = pointExposureDistance
-        self.laserSpeed = 0.0
+    @bid.setter
+    def bid(self, bid):
+        self._bid = bid
+
+    @property
+    def laserPower(self) -> float:
+        """
+        The average laser power used
+        """
+        return self._laserPower
+
+    @laserPower.setter
+    def laserPower(self, laserPower:float):
+        self._laserPower = laserPower
+
+    @property
+    def laserFocus(self) -> int:
+        """
+        The laser focus position used, typically given as increment position
+        """
+        return self._laserFocus
+
+    @laserFocus.setter
+    def laserFocus(self, focus: int):
+        self._laserFocus = focus
+
+    @property
+    def laserSpeed(self) -> float:
+        """
+        The laser speed used
+        """
+        return self._laserSpeed
+
+    @laserSpeed.setter
+    def laserSpeed(self, laserSpeed: float):
+        self._laserSpeed = laserSpeed
+
+    @property
+    def pointExposureTime(self) -> int:
+        """
+        The point exposure time (usually expressed as an integer :math:`\\mus`).
+        """
+        return self._pointExposureTime
+
+    @pointExposureTime.setter
+    def pointExposureTime(self, pointExposureTime: int):
+        self._pointExposureTime = pointExposureTime
+
+    @property
+    def pointDistance(self) -> int:
+        """
+        The point exposure distance (usually expressed as an integer :math:`\\mum`).
+        """
+        return self._pointExposureTime
+
+    @pointDistance.setter
+    def pointDistance(self, pointDistance: int):
+        self._pointDistance = pointDistance
+
+    def setStyle(self, bid: int, focus: int, power: float,
+                 pointExposureTime: int, pointExposureDistance: int, laserSpeed: float = 0.0):
+
+        self._bid = bid
+        self._laserFocus = focus
+        self._laserPower = power
+        self._pointExposureTime = pointExposureTime
+        self._pointDistance = pointExposureDistance
+        self._laserSpeed = laserSpeed
 
 
 class Model:
-
-    def __init__(self):
-        self.mid = 0
+    """
+    A Model represents a parametric group or in practice a part which contains a set of :class:BuildStyle` used across
+    the LayerGeometry.
+    """
+    def __init__(self, mid: Optional[int] = 0):
+        self._mid = mid
         self.topLayerId = 0
         self.name = ""
-        self.buildStyles = []
+        self._buildStyles = []
 
     def __len__(self):
         return len(self.buildStyles)
 
+    @property
+    def buildStyles(self) -> List[BuildStyle]:
+        """ The build styles associated with this model """
+        return self._buildStyles
+
+    @buildStyles.setter
+    def buildStyles(self, buildStyles: List[BuildStyle]):
+        self._buildStyles = buildStyles
+
+    @property
+    def mid(self) -> int:
+        """The unique id for this Model"""
+        return self._mid
+
+    @mid.setter
+    def mid(self, mid: int):
+        self._mid = mid
 
 class LayerGeometryType(Enum):
     Invalid = 0
@@ -54,21 +149,27 @@ class LayerGeometryType(Enum):
 
 
 class LayerGeometry(abc.ABC):
-    def __init__(self, modelId: int = 0, buildStyleId: int = 0, coords: np.ndarray = None):
+    """
+    A Layer Geometry is the base class type used for storing a group of scan vectors or exposures. This is assigned a
+    model id (:attr:~LayerGeometry.mid) and a build style (:attr:`~LayerGeometry.bid). A set of coordinates are always
+    available via :attr:`~LayerGeometry.coords`.
+    """
+
+    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0, coords: Optional[np.ndarray] = None):
         self._bid = buildStyleId
         self._mid = modelId
 
         self._coords = np.array([])
 
         if coords:
-            self.coords = coords
+            self._coords = coords
 
     def boundingBox(self) -> np.ndarray:
         return np.hstack(np.min(self.coords, axis=0), np.max(self.coords, axis=0))
 
     @property
     def coords(self) -> np.ndarray:
-        """ Coordinate data stored by the Layer Geometry Group"""
+        """ Coordinate data stored by the LayerGeometry."""
         return self._coords
 
     @coords.setter
@@ -82,8 +183,8 @@ class LayerGeometry(abc.ABC):
     @property
     def mid(self) -> int:
         """
-        The Model Id for the layer geometry group. The Model Id refers to the collection of unique build-styles assigned
-        to a part within a build.
+        The Model Id used for the :class:`LayerGeometry`. The Model Id refers to the collection of unique build-styles
+        assigned to a part within a build.
         """
         return self._mid
 
@@ -94,8 +195,8 @@ class LayerGeometry(abc.ABC):
     @property
     def bid(self) -> int:
         """
-        The Build Style Id for the layer geometry group. The Build Style Id refers to the collection of laser parameters
-        used during scanning of scan vector group.
+        The Build Style Id for the :class:`LayerGeometry`. The Build Style Id refers to the collection of laser parameters
+        used during scanning of scan vector group and must be available within the :class:`Model` used.
         """
         return self._bid
 
@@ -104,12 +205,24 @@ class LayerGeometry(abc.ABC):
         self._bid = buildStyleId
 
     @abc.abstractmethod
-    def type(self):
+    def type(self) -> LayerGeometryType:
+        """
+        Returns which type the :class:`layerGeometry` is in the derived class.
+
+        """
         return LayerGeometryType.Invalid
 
 
 class HatchGeometry(LayerGeometry):
-    def __init__(self, modelId: int = 0, buildStyleId: int = 0, coords: np.ndarray = None):
+    """
+    HatchGeometry represents a :class:`LayerGeometry` consisting of a series coordinates pairs :math:`[(x_0,y_0), (x_1,x_2)]`
+    representing the start and end points of a scan vectors. This allows the point source to jump between scan vectors,
+    unlike :class:`ContourGeometry`. Typically, the scan vectors are used for infilling large internal regions and
+    are arranged parallel at a set distance from each other.
+    """
+    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0,
+                       coords: Optional[np.ndarray] = None):
+
         super().__init__(modelId, buildStyleId, coords)
         # print('Constructed Hatch Geometry')
 
@@ -124,18 +237,25 @@ class HatchGeometry(LayerGeometry):
 
     def numHatches(self) -> int:
         """
-        Number of hatches within this layer geometry set
+        Number of hatches within this LayerGeometry
         """
-        return self.pnts.shape[0]
+        return self.pnts.shape[0] / 2
 
 
 class ContourGeometry(LayerGeometry):
-    def __init__(self, modelId: int = 0, buildStyleId: int = 0, coords: np.ndarray = None):
+    """
+     ContourGeometry represents a :class:`LayerGeometry` consisting of a series of connected coordinates
+     :math:`[(x_0,y_0), ..., (x_{n-1},x_{n-1})]` representing a continuous line. This allows the exposure point to
+     efficiently follow a path without jumping,  unlike :class:`HatchGeometry`. Typically, the scan vectors are used for
+     generated the boundaries of a part across a layer.
+     """
+    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0,
+                       coords: Optional[np.ndarray] = None):
+
         super().__init__(modelId, buildStyleId, coords)
 
     # print('Constructed Contour Geometry')
 
-    # TODO add some type method
     def numContours(self) -> int:
         """
         Number of contour vectos in the geometry group.
@@ -153,7 +273,14 @@ class ContourGeometry(LayerGeometry):
 
 
 class PointsGeometry(LayerGeometry):
-    def __init__(self, modelId: int = 0, buildStyleId: int = 0, coords: np.ndarray = None):
+    """
+     PointsGeometry represents a :class:`LayerGeometry` consisting of a series of discrete or disconnected exposure points
+     :math:`[(x_0,y_0), ..., (x_{n-1},x_{n-1})]` . This allows the user to prescribe very specific exposures to the bed,
+     for very controlled and articulated scan styles. Typically, the exposure points are used either lattice structures,
+     or support structures. It is impracticable and inefficient to use these for generated very large aerial regions..
+     """
+    def __init__(self, modelId: Optional[int] = 0, buildStyleId: Optional[int] = 0,
+                 coords: Optional[np.ndarray] = None):
 
         super().__init__(modelId, buildStyleId, coords)
 
@@ -174,7 +301,7 @@ class PointsGeometry(LayerGeometry):
 class ScanMode(Enum):
     """
     The scan mode is an enumeration class used to re-order all :class:`LayerGeometry` when accessing the entire collection
-    from the :class:`Layer`
+    from the :class:`Layer`.
     """
     Default = 0
     ContourFirst = 1
@@ -184,11 +311,14 @@ class ScanMode(Enum):
 class Layer:
     """
     Slice Layer is a simple class structure for containing a set of SLM :class:`LayerGeometry` including specific
-    derivatives including: :class:`ContourGeometry`, :class:`HatchGeometry`,:class:`PointsGeometry` Types and also
-    the current slice or layer position in z.
+    derivatives including: :class:`ContourGeometry`, :class:`HatchGeometry`, :class:`PointsGeometry` types stored in
+    :attr:`Layer.geometry` and also the current slice or layer position in :attr:`Layer.z`.
+
+    The layer z position is  stored in an integer format to remove any specific rounding - typically this is the number
+    of microns.
     """
 
-    def __init__(self, z = 0, id = 0):
+    def __init__(self, z: Optional[int] = 0, id: Optional[int] = 0):
         self._z = z
         self._id = 0
         self._geometry = []
@@ -234,7 +364,8 @@ class Layer:
 
     def appendGeometry(self, geom: LayerGeometry):
         """
-        Complimentary method to match libSLM API
+        Complimentary method to match libSLM API. This appends any :class:`LayerGeometry` and derived classes into the
+        Layer in sequential order.
 
         :param geom: The LayerGeometry to add to the layer
         """
@@ -263,7 +394,7 @@ class Layer:
     @property
     def geometry(self) -> List[Any]:
         """
-        Contains all the layer geometry groups in the layer.
+        :class:`LayerGeometry` sections that are stored in the layer.
         """
 
         return self._geometry
@@ -273,6 +404,7 @@ class Layer:
         self._geometry = geoms
 
     def getContourGeometry(self) -> List[HatchGeometry]:
+        """ Returns a list of all :class:`ContourGeometry` stored in the layer. """
 
         geoms = []
         for geom in self._geometry:
@@ -282,6 +414,7 @@ class Layer:
         return geoms
 
     def getHatchGeometry(self) -> List[HatchGeometry]:
+        """ Returns a list of all :class:`HatchGeometry` stored in the layer. """
 
         geoms = []
         for geom in self._geometry:
@@ -291,7 +424,7 @@ class Layer:
         return geoms
 
     def getPointsGeometry(self) -> List[PointsGeometry]:
-
+        """ Returns a list of all :class:`PointsGeometry` stored in the layer. """
         geoms = []
         for geom in self._geometry:
             if isinstance(geom, PointsGeometry):
