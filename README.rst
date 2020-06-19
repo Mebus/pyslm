@@ -87,6 +87,7 @@ interface with commercial systems, the user can choose to install libSLM. Note, 
 request machine build file translators.
 
 .. code:: bash
+
     pip install libSLM
     pip install PythonSLM
 
