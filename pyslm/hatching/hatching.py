@@ -104,7 +104,7 @@ class BaseHatcher(abc.ABC):
 
     The user typically specifies a boundary, which may be offset the boundary of region using
     :meth:`~BaseHatcher.offsetBoundary`. This is typically performed before generating the infill.
-     Following offsetting, the a series of hatch lines are generated using :meth:`~BaseHatcher.generateHatching` to fill
+    Following offsetting, the a series of hatch lines are generated using :meth:`~BaseHatcher.generateHatching` to fill
     the entire boundary region using :meth:`~BaseHatcher.polygonBoundingBox`. To obtain the final clipped in-fill, the
     hatches are clipped using :meth:`~BaseHatcher.clipLines` which are clipped in the same sequential order they are generated using a technique
     explained further in the class method. The generated scan paths should be stored into collections of LayerGeometry
@@ -119,9 +119,9 @@ class BaseHatcher(abc.ABC):
     PYCLIPPER_SCALEFACTOR = 1e4
     """ 
     The scaling factor used for polygon clipping and offsetting in `PyClipper <http://pyclipper.com>`_ for the decimal
-     component of each polygon coordinate. This should be set to inverse of the required decimal tolerance i.e. 0.01 
-     requires a minimum scalefactor of 1e2. This scaling factor is used in :meth:`~BaseHatcher.scaleToClipper` 
-     and :meth:`~BaseHatcher.scaleFromClipper`. 
+    component of each polygon coordinate. This should be set to inverse of the required decimal tolerance i.e. 0.01 
+    requires a minimum scalefactor of 1e2. This scaling factor is used in :meth:`~BaseHatcher.scaleToClipper` 
+    and :meth:`~BaseHatcher.scaleFromClipper`. 
     """
 
     def __init__(self):
@@ -297,7 +297,7 @@ class BaseHatcher(abc.ABC):
         Generates un-clipped hatches which is guaranteed to cover the entire polygon region base on the maximum extent
         of the polygon bounding box
 
-        :param paths:
+        :param paths: Boundary paths to generate hatches to cover
         :param hatchSpacing: Hatch Spacing to use
         :param hatchAngle: Hatch angle (degrees) to rotate the scan vectors
 

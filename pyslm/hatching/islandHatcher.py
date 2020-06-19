@@ -65,7 +65,7 @@ class Island(InnerHatchRegion):
     def localBoundary(self) -> np.ndarray:
         """
         Returns the local square boundary based on the island width (:attr:`~Island.islandWidth`) and also the
-        island overlap (:attr:`Island.islandOverlap`. The island overlap provides an offset from the original boundary,
+        island overlap (:attr:`~Island.islandOverlap`. The island overlap provides an offset from the original boundary,
         so the user must compensate the actual overlap by a factor of a half. The boundary is cached into a static class
         attribute :attr:Island._boundary` since this remains constant typically across the entire hatching process.
         If the user desires to change this the user should re-implement the class and this method.
@@ -92,7 +92,7 @@ class Island(InnerHatchRegion):
     def boundary(self) -> Polygon:
         """
         Returns the transformed boundary obtained from :meth:`~Island.localBoundary` into
-        the global coordinate system :math:`(X,Y)`.
+        the global coordinate system :math:`(x,y)`.
 
         :return: Boundary polygon
         """
@@ -129,14 +129,13 @@ class Island(InnerHatchRegion):
                           y.reshape(-1, 1),
                           z.reshape(-1,1)])
 
-    def hatch(self):
+    def hatch(self) -> np.ndarray:
         """
         Generates a set of hatches orthogonal to the island's coordinate system depending if the the sum of
         :attr:`~Island.posId` is even or odd. The returned hatch vectors are transformed and sorted depending on the
         direction.
 
-        :return: T
-        ransformed and ordered hatch vectors
+        :return: The transformed and ordered hatch vectors
         """
         isOdd = np.mod(sum(self.posId), 2)
         coords = self.generateInternalHatch(isOdd)
@@ -164,7 +163,7 @@ class IslandHatcher(Hatcher):
 
     @property
     def islandWidth(self) -> float:
-        """ The island width. """
+        """ The island width """
         return self._islandWidth
 
     @islandWidth.setter
@@ -173,7 +172,7 @@ class IslandHatcher(Hatcher):
 
     @property
     def islandOverlap(self) -> float:
-        """ The length of overlap between adjacent islands in both directions. """
+        """ The length of overlap between adjacent islands in both directions """
         return self._islandOverlap
 
     @islandOverlap.setter

@@ -36,7 +36,7 @@ class BuildStyle:
 
     @property
     def bid(self) -> int:
-        """ A unique id used for each BuildStyle object within each Model that can be referenced by a :class:`LayerGeometry. """
+        """ A unique id used for each BuildStyle object within each Model that can be referenced by a :class:`LayerGeometry` """
         return self._bid
 
     @bid.setter
@@ -79,7 +79,7 @@ class BuildStyle:
     @property
     def pointExposureTime(self) -> int:
         """
-        The point exposure time (usually expressed as an integer :math:`\\mus`).
+        The point exposure time (usually expressed as an integer :math:`\\mu s`).
         """
         return self._pointExposureTime
 
@@ -90,7 +90,7 @@ class BuildStyle:
     @property
     def pointDistance(self) -> int:
         """
-        The point exposure distance (usually expressed as an integer :math:`\\mum`).
+        The point exposure distance (usually expressed as an integer :math:`\\mu m`).
         """
         return self._pointExposureTime
 
@@ -111,8 +111,8 @@ class BuildStyle:
 
 class Model:
     """
-    A Model represents a parametric group or in practice a part which contains a set of :class:BuildStyle` used across
-    the LayerGeometry.
+    A Model represents a parametric group or in practice a part which contains a set of :class:`BuildStyle` used across
+    the :class:`LayerGeometry.`
     """
     def __init__(self, mid: Optional[int] = 0):
         self._mid = mid
@@ -151,7 +151,7 @@ class LayerGeometryType(Enum):
 class LayerGeometry(abc.ABC):
     """
     A Layer Geometry is the base class type used for storing a group of scan vectors or exposures. This is assigned a
-    model id (:attr:~LayerGeometry.mid) and a build style (:attr:`~LayerGeometry.bid). A set of coordinates are always
+    model id (:attr:`~LayerGeometry.mid`) and a build style (:attr:`~LayerGeometry.bid`). A set of coordinates are always
     available via :attr:`~LayerGeometry.coords`.
     """
 
@@ -183,7 +183,7 @@ class LayerGeometry(abc.ABC):
     @property
     def mid(self) -> int:
         """
-        The Model Id used for the :class:`LayerGeometry`. The Model Id refers to the collection of unique build-styles
+        The Model Id used for the LayerGeometry The Model Id refers to the collection of unique build-styles
         assigned to a part within a build.
         """
         return self._mid
@@ -195,7 +195,7 @@ class LayerGeometry(abc.ABC):
     @property
     def bid(self) -> int:
         """
-        The Build Style Id for the :class:`LayerGeometry`. The Build Style Id refers to the collection of laser parameters
+        The Build Style Id for the LayerGeometry. The Build Style Id refers to the collection of laser parameters
         used during scanning of scan vector group and must be available within the :class:`Model` used.
         """
         return self._bid
@@ -312,7 +312,7 @@ class Layer:
     """
     Slice Layer is a simple class structure for containing a set of SLM :class:`LayerGeometry` including specific
     derivatives including: :class:`ContourGeometry`, :class:`HatchGeometry`, :class:`PointsGeometry` types stored in
-    :attr:`Layer.geometry` and also the current slice or layer position in :attr:`Layer.z`.
+    :attr:`~Layer.geometry` and also the current slice or layer position in :attr:`~Layer.z`.
 
     The layer z position is  stored in an integer format to remove any specific rounding - typically this is the number
     of microns.
@@ -320,7 +320,7 @@ class Layer:
 
     def __init__(self, z: Optional[int] = 0, id: Optional[int] = 0):
         self._z = z
-        self._id = 0
+        self._id = id
         self._geometry = []
         self._name = ""
 

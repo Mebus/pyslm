@@ -69,7 +69,7 @@ def plotLayers(layers: List[Layer],
                plotOrderLine: Optional[bool] = False, handle=None) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots a list of :class:`Layer`, specifically the scan vectors (contours and hatches) and point exposures for each
-    :class:`LayerGeometry using `Matplotlib`. The Layer may be plotted in 3D by setting the plot3D parameter.
+    :class:`LayerGeometry` using `Matplotlib`. The Layer may be plotted in 3D by setting the plot3D parameter.
 
     :param layers: A list of :class:`Layer`
     :param plotContours: Plots the inner hatch scan vectors. Defaults to `True`

@@ -156,18 +156,18 @@ class Part(DocumentObject):
     Part is a solid geometry within the document object tree. Currently this part is individually as part but will
     be sliced as part of a document tree structure.
 
-    The part can be transformed and has a position (:attr:`Part.origin`),
-    rotation (:attr:`Part.rotation`)  and additional scale factor (:attr:`Part.scaleFactor`), which are collectively
-     applied to the geometry in its local coordinate system :math:`(x,y,z)`. Changing the geometry using
-    :meth:`Part.setGeometryByMesh` or :meth:`Part.setGeometry` along with any of the transformation attributes will set
-    the part dirty and forcing the transformation and geometry to be re-computed on the next call inorder to obtain
+    The part can be transformed and has a position (:attr:`~Part.origin`),
+    rotation (:attr:`~Part.rotation`)  and additional scale factor (:attr:`~Part.scaleFactor`), which are collectively
+    applied to the geometry in its local coordinate system :math:`(x,y,z)`. Changing the geometry using
+    :meth:`~Part.setGeometryByMesh` or :meth:`~Part.setGeometry` along with any of the transformation attributes will set
+    the part dirty and forcing the transformation and geometry to be re-computed on the next call in order to obtain
     the :attr:`Part.geometry`.
 
-    Generally for AM and 3D printing the following function :meth:`Part.getVectorSlice` is the most useful. This method
+    Generally for AM and 3D printing the following function :meth:`~Part.getVectorSlice` is the most useful. This method
     provides the user with a slice for a given z-plane containing the boundaries consisting of a series of polygons.
     The output from this function is either a list of closed paths (coordinates) or a list of
     :class:`shapely.geometry.Polygon`. A bitmap slice can alternatively be obtained for certain AM process using
-    :meth:`Part.getBitmapSlice` in similar manner.
+    :meth:`~Part.getBitmapSlice` in similar manner.
     """
 
     def __init__(self, name):
@@ -191,7 +191,7 @@ class Part(DocumentObject):
 
     def isDirty(self) -> bool:
         """
-        When a transformation or the geometry object has been changed via methods in the :class:`Part`,
+        When a transformation or the geometry object has been changed via methods in the part,
         the state is toggled dirty and the transformation matrix must be re-applied to generate a new internal
         representation of the geometry , which is then cached for future use.
 
@@ -202,7 +202,7 @@ class Part(DocumentObject):
 
     @property
     def rotation(self) -> np.ndarray:
-        """ The rotation of the part is a 1x3 array representing the rotations :math:`(\\alpha, \\beta, \\gamma)`
+        """ The part rotation is a 1x3 array representing the rotations :math:`(\\alpha, \\beta, \\gamma)`
         in degrees about X, Y, Z, applied sequentially in that order. """
         return self._rotation
 
@@ -219,7 +219,7 @@ class Part(DocumentObject):
 
     @property
     def origin(self) -> np.ndarray:
-        """ The origin or the translation of the :class:`Part`."""
+        """ The origin or the translation of the part"""
         return self._origin
 
     @origin.setter
@@ -236,7 +236,7 @@ class Part(DocumentObject):
     @property
     def scaleFactor(self) -> np.ndarray:
         """
-        The scale factor is a 1x3 matrix :math:`(S_x, S_y, S_z)` representing the scale factor of the :class:`Part`.
+        The scale factor is a 1x3 matrix :math:`(s_x, s_y, s_z)` representing the scale factor of the part
         """
         return self._scaleFactor
 
@@ -260,7 +260,7 @@ class Part(DocumentObject):
     def getTransform(self) -> np.ndarray:
         """
         Returns the transformation matrix (3x3 numpy matrix) used for the :class:`Part` consisting of a translation
-        (:attr:`Part.origin`), a rotation :attr:`Part.rotation` and a scale factor :attr:`Part.scaleFactor`
+        (:attr:`~Part.origin`), a :attr:`~Part.rotation` and a :attr:`~Part.scaleFactor`
         """
 
         Sx = trimesh.transformations.scale_matrix(factor = self._scaleFactor[0], direction=[1,0,0])
@@ -347,7 +347,7 @@ class Part(DocumentObject):
         The vector slice is created by using `trimesh` to slice the mesh into a polygon
 
         :param returnCoordPaths: If True returns a list of closed paths representing the polygon, otherwise Shapely Polygons
-        :param z: Slice z-position
+        :param z: The slice's z-position
         :return: The vector slice at the given z level
 
         """

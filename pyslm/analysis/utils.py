@@ -6,8 +6,8 @@ from ..geometry import Layer, LayerGeometry, HatchGeometry, ContourGeometry, Poi
 
 def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
     """
-    Calculates the jump distance of the laser between adjacent exposure points and hatches, principally used fpr
-     :class:`HatchGeometry` and :class:`PointsGeometry`.
+    Calculates the jump distance of the laser between adjacent exposure points and hatches, principally used for
+    :class:`HatchGeometry` and :class:`PointsGeometry`.
 
     :param layerGeom: Layer Geometry to find
     :return: The total path length of the layer geometry
@@ -33,7 +33,7 @@ def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
 def getLayerGeometryPathLength(layerGeom: LayerGeometry) -> float:
     """
     Calculates the total path length scanned by the laser across a single :class:`LayerGeometry` and is used for 1D
-    geometry types i.e. :class:`HatchGeometry` and :class`ContourGeometry`.
+    geometry types i.e. :class:`HatchGeometry` and :class:`ContourGeometry`.
 
     :param layerGeom: The Layer Geometry to be measured
 
@@ -77,7 +77,7 @@ def getLayerGeometryTime(layerGeometry: LayerGeometry, model: Model) -> float:
     :param layerGeometry:  The layer geometry to process
     :param model: The model containing the buildstyles which is used by the layer geometry
 
-    :return: Time taken to scan across the layer geometry
+    :return: The time taken to scan across the layer geometry
     """
     # Find the build style
     # [TODO] use getLayerGeometrybyId in libSLM
@@ -92,7 +92,7 @@ def getLayerTime(layer : Layer, model: Model) -> float:
     :param layer: The layer to process
     :param model: The model containing the buildstyle used
 
-    :return Tome taken to scan across the layer
+    :return The time taken to scan across the layer
     """
     layerTime = 0.0
 
