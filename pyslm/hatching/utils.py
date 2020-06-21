@@ -1,8 +1,26 @@
-from typing import List
+from typing import Any, List, Optional
 import numpy as np
 import trimesh.path.polygons
 import shapely.geometry
+
 from shapely.geometry import Polygon, LinearRing
+
+
+def simplifyBoundaries(paths: List[Any], tolerance: float = 0.5, method : Optional[str] = '') -> Any:
+
+    if not paths:
+        return
+
+    boundaries = []
+
+    if isinstance(paths[0], shapely.geometry.Polygon):
+        boundaries = [path.simplify(tolerance, preserve_topology=True) for path in paths]
+    else:
+        from skimage.measure import approximate_polygon
+        boundaries = [approximate_polygon(path, tolerance) for path in paths]
+
+    return boundaries
+
 
 
 def pathsToClosedPolygons(paths) -> List[shapely.geometry.Polygon]:
