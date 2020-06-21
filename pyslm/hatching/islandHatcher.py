@@ -227,8 +227,8 @@ class IslandHatcher(Hatcher):
         # Hatch angle
         theta_h = np.radians(hatchAngle)  # 'rad'
 
-        # Get the bounding box of the paths
-        bbox = self.polygonBoundingBox(paths)
+        # Get the bounding box of the boundary
+        bbox = self.boundaryBoundingBox(paths)
 
         print('bounding box bbox', bbox)
         # Expand the bounding box
@@ -328,62 +328,61 @@ class IslandHatcher(Hatcher):
         scanVectors = []
 
         # Iterate through each closed polygon region in the slice. The currently individually sliced.
-        for paths in curBoundary:
 
-            # Hatch angle will change per layer
-            # TODO change the layer angle increment
-            layerHatchAngle = np.mod(self._hatchAngle + self._layerAngleIncrement, 180)
+        # Hatch angle will change per layer
+        # TODO change the layer angle increment
+        layerHatchAngle = np.mod(self._hatchAngle + self._layerAngleIncrement, 180)
 
-            # The layer hatch angle needs to be bound by +ve X vector (i.e. -90 < theta_h < 90 )
-            if layerHatchAngle > 90:
-                layerHatchAngle = layerHatchAngle - 180
+        # The layer hatch angle needs to be bound by +ve X vector (i.e. -90 < theta_h < 90 )
+        if layerHatchAngle > 90:
+            layerHatchAngle = layerHatchAngle - 180
 
-            # Generate the square island sub regions
-            islands = self.generateIslands(paths, self._hatchAngle)
+        # Generate the square island sub regions
+        islands = self.generateIslands(curBoundary, self._hatchAngle)
 
-            # All Island subregions need to have an intersection test
-            self.intersectIslands(paths, islands)
+        # All Island subregions need to have an intersection test
+        self.intersectIslands(curBoundary, islands)
 
-            # Sort the islands using a basic sort
-            sortedIslands = sorted(islands, key=lambda island: (island.posId[0], island.posId[1]) )
+        # Sort the islands using a basic sort
+        sortedIslands = sorted(islands, key=lambda island: (island.posId[0], island.posId[1]) )
 
-            # Structure for storing the hatch scan vectors
-            clippedCoords = []
-            unclippedCoords = []
+        # Structure for storing the hatch scan vectors
+        clippedCoords = []
+        unclippedCoords = []
 
-            # Generate the hatches for all the islands
-            idx = 0
-            for island in sortedIslands:
+        # Generate the hatches for all the islands
+        idx = 0
+        for island in sortedIslands:
 
-                # Generate the hatches for each island subregion
-                coords = island.hatch()
+            # Generate the hatches for each island subregion
+            coords = island.hatch()
 
-                # Note for sorting later the order of the hatch vector is updated based on the sortedIsland
-                coords[:, 2] += idx
+            # Note for sorting later the order of the hatch vector is updated based on the sortedIsland
+            coords[:, 2] += idx
 
-                if island.isIntersecting():
-                    if island.requiresClipping():
-                        clippedCoords.append(coords)
-                    else:
-                        unclippedCoords.append(coords)
+            if island.isIntersecting():
+                if island.requiresClipping():
+                    clippedCoords.append(coords)
+                else:
+                    unclippedCoords.append(coords)
 
-                # Update the index by incremented by the number of hatches
-                idx += len(coords) / 2
+            # Update the index by incremented by the number of hatches
+            idx += len(coords) / 2
 
-            clippedCoords = np.vstack(clippedCoords)
-            unclippedCoords = np.vstack(unclippedCoords).reshape(-1,2,3)
+        clippedCoords = np.vstack(clippedCoords)
+        unclippedCoords = np.vstack(unclippedCoords).reshape(-1,2,3)
 
-            # Clip the hatches of the boundaries to fill to the boundary
-            clippedPaths = self.clipLines(paths, clippedCoords)
-            clippedPaths = np.array(clippedPaths)
+        # Clip the hatches of the boundaries to fill to the boundary
+        clippedPaths = self.clipLines(curBoundary, clippedCoords)
+        clippedPaths = np.array(clippedPaths)
 
-            # Merge hatches from both groups together
-            hatches = np.vstack([clippedPaths, unclippedCoords])
-            clippedLines = self.clipperToHatchArray(hatches)
+        # Merge hatches from both groups together
+        hatches = np.vstack([clippedPaths, unclippedCoords])
+        clippedLines = self.clipperToHatchArray(hatches)
 
-            # Merge the lines together
-            if len(clippedPaths) == 0:
-                continue
+        # Merge the lines together
+        if len(clippedPaths) > 0:
+
 
             # Extract only x-y coordinates and sort based on the pseudo-order stored in the z component.
             clippedLines = clippedLines[:, :, :3]
@@ -423,7 +422,10 @@ class IslandHatcher(Hatcher):
 
         :return: A tuple containing lists of clipped and unClipped islands
         """
-        polys = pathsToClosedPolygons(paths)
+        polys = []
+        for path in paths:
+            polys += pathsToClosedPolygons(path)
+
         poly = MultiPolygon(polys)
 
         intersectIslands = []
