@@ -243,7 +243,10 @@ class Part(DocumentObject):
     @scaleFactor.setter
     def scaleFactor(self, sf: Any):
 
-        self._scaleFactor = np.asanyarray(sf)
+        self._scaleFactor = np.asanyarray(sf).flatten()
+
+        if len(self._scaleFactor) == 1:
+            self._scaleFactor = self._scaleFactor * np.ones([3,])
 
         self._dirty = True
 
@@ -323,7 +326,6 @@ class Part(DocumentObject):
         The bounding box of the geometry transformed in the global coordinate frame :math:`(X,Y,Z). The bounding
         box is a 1x6 array consisting of the minimum coordinates followed by the maximum coordinates for the corners of
         the bounding box.
-
         """
 
         if not self.geometry:
