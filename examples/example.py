@@ -26,6 +26,7 @@ z = 1.0
 
 # Create a BasicIslandHatcher object for performing any hatching operations (
 myHatcher = hatching.BasicIslandHatcher()
+myHatcher.islandWidth = 3.0
 myHatcher.stripeWidth = 5.0
 
 # Set the base hatching parameters which are generated within Hatcher
@@ -83,5 +84,6 @@ Analyse the layers using the analysis module. The path distance and the estimate
 predicted.
 """
 print('Total Path Distance: {:.1f} mm'.format(analysis.getLayerPathLength(layer)))
+print('Total jump distance {:.1f} mm'.format(analysis.getLayerJumpLength(layer)))
 print('Time taken {:.1f} s'.format(analysis.getLayerTime(layer, model)) )
 
