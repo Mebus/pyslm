@@ -2,7 +2,29 @@
 # Change Log
 All notable changes to this project will be documented in this file.
   
-## [Unreleased] - 2020-06-17
+## [Unreleased]
+
+### Added
+- Added BaseHatcher.boundaryBoundingBox() to obtain the bounding box of a collection of polygons - returned internally from PyClipper
+- Added a simplifyBoundaries() in hatching/utils.py to simplify polygons (shapely and raw coordinate boundaries using scikit image)
+- hatching.generateExposurePoints() now generates for ContourGeometry
+
+### Changed
+- Internally generateHatching() and hatch() in subclasses of BaseHatcher to generate the internal hatch geometry to use multiple boundaries
+to ensure that the subregion generation sorting covers the global region. 
+    - Internally BaseHatcher.boundaryBoundingBox() is called instead of BaseHatcher.polygonBoundingBox()
+    - Removed the for loop which previously iterate across boundaries.
+    - Updated IslandHatcher to use this behaviour 
+
+### Fixed
+- Jump distance between LayerGeometry is accounted for in analysis submodule
+
+## [0.2.1] - 2020-06-19
+
+### Fixed
+- Fixed the setup.py source tarball to include the PyClipper extensions. 
+
+## [0.2.0] - 2020-06-17
  
 Development branch of PySLM with new features. 
  
