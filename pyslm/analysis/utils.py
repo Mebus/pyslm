@@ -12,6 +12,7 @@ def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
     :param layerGeom: Layer Geometry to find
     :return: The total path length of the layer geometry
     """
+    totalJumpDist = 0.0
 
     if isinstance(layerGeom, HatchGeometry):
         # jump calculation estimation
@@ -22,8 +23,7 @@ def getLayerGeometryJumpDistance(layerGeom: LayerGeometry) -> float:
 
     if isinstance(layerGeom, PointsGeometry):
         # jump calculation estimation
-        coords = layerGeom.coords
-        delta = np.diff(coords, axis=0)
+        delta = np.diff(layerGeom.coords, axis=0)
         lineDist = np.hypot(delta[:, 0], delta[:, 1])
         totalJumpDist = np.sum(lineDist)
 
@@ -56,6 +56,33 @@ def getLayerGeometryPathLength(layerGeom: LayerGeometry) -> float:
     return totalPathDist
 
 
+def getLayerJumpLength(layer: Layer) -> float:
+    """
+    Returns the total jump length across the :class:`Layer`
+
+    :param layer: The Layer to measure
+    :return: Returns the path length for the layer
+    """
+    totalJumpDistance = 0.0
+    intraJumpDistance = 0.0
+
+    lastCoord = None
+
+    for layerGeom in layer.geometry:
+        totalJumpDistance += getLayerGeometryJumpDistance(layerGeom)
+
+        if lastCoord is not None:
+            delta = lastCoord - layerGeom.coords[0, :]
+            intraJumpDistance += np.hypot(delta[0], delta[1])
+            lastCoord = None
+
+        lastCoord = (layerGeom.coords[0,:])
+
+    totalJumpDistance += intraJumpDistance
+
+    return totalJumpDistance
+
+
 def getLayerPathLength(layer: Layer) -> float:
     """
     Returns the total path length across the :class:`Layer`
@@ -69,6 +96,7 @@ def getLayerPathLength(layer: Layer) -> float:
         totalPathDistance += getLayerGeometryPathLength(layerGeom)
 
     return totalPathDistance
+
 
 def getLayerGeometryTime(layerGeometry: LayerGeometry, model: Model) -> float:
     """
