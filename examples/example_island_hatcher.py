@@ -61,7 +61,7 @@ if True:
     # The above intersectIsland internal method can also be achieved using the following approach below.
 
     # Get the Shapely Polygons from slicing the part
-    poly = solidPart.getVectorSlice(z, False).polygons_full.tolist()
+    poly = solidPart.getVectorSlice(z, False).tolist()
 
     # Use shapely MultiPolygon collection to allow full testing and clipping across all boundary regions
     poly = MultiPolygon(poly)
