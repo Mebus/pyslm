@@ -66,7 +66,7 @@ of the scan strategies.
 Currently the capability to enable translation to commercial machine build platforms is being providing through a
 supporting library called `libSLM <https://github.com/drlukeparry/libSLM>`_ . This is a c++ library to enable efficient
 import and export across various commercial machine build files. Work is underway to support the following file formats.
-If you would like to support implementing a custom format, please raise a `request <https://github.com/drlukeparry/pyslm/issue>`_.
+If you would like to support implementing a custom format, please raise a `request <https://github.com/drlukeparry/pyslm/issues>`_.
 
 * Renishaw MTT (**.mtt**),
 * DMG Mori Realizer (**.rea**),
