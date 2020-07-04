@@ -4,6 +4,23 @@ import trimesh
 
 from ..core import Part
 
+def getSupportAngles(part: Part) -> np.ndarray:
+    """
+
+    :param part:
+    """
+
+    # Upward vector for support angles
+    v0 = np.array([[0., 0., -1.0]])
+
+    # Identify Support Angles
+    v1 = part.geometry.face_normals
+    theta = np.arccos(np.clip(np.dot(v0, v1.T), -1.0, 1.0))
+    theta = np.degrees(theta).flatten()
+
+    return theta
+
+
 def getOverhangMesh(part: Part, overhangAngle: float) -> trimesh.Trimesh:
     """
     Gets the overhang mesh from a :class:`Part`.
@@ -13,7 +30,7 @@ def getOverhangMesh(part: Part, overhangAngle: float) -> trimesh.Trimesh:
     :return:
     """
     # Upward vector for support angles
-    v0 = np.array([[0., 0., 1.0]])
+    v0 = np.array([[0., 0., -1.0]])
 
     # Identify Support Angles
     v1 = part.geometry.face_normals
