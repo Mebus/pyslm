@@ -21,6 +21,10 @@ solidPart.dropToPlatform()
 
 print(solidPart.boundingBox)
 
+pyslm.visualise.visualiseOverhang(solidPart, 60)
+
+gd
+
 # Set te slice layer position
 z = 1.0
 

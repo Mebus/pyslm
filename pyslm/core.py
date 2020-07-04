@@ -131,7 +131,7 @@ class Document:
     @property
     def partBoundingBox(self):
         """
-        An (nx6) array containing the bounding box for all the parts. This is needed for calculating the grid
+        A (nx6) array containing the bounding box for all the parts. This is needed for calculating the grid
         """
         pbbox = np.vstack([part.boundingBox for part in self.parts])
         return np.hstack([np.min(pbbox[:, :3], axis=0), np.max(pbbox[:, 3:], axis=0)])
@@ -153,8 +153,8 @@ class Document:
 
 class Part(DocumentObject):
     """
-    Part is a solid geometry within the document object tree. Currently this part is individually as part but will
-    be sliced as part of a document tree structure.
+    Part is a solid geometry within the document object tree. Currently, this just represents a single part that
+    will eventually be later sliced as part of a document tree structure.
 
     The part can be transformed and has a position (:attr:`~Part.origin`),
     rotation (:attr:`~Part.rotation`)  and additional scale factor (:attr:`~Part.scaleFactor`), which are collectively
@@ -282,7 +282,7 @@ class Part(DocumentObject):
 
     def setGeometry(self, filename: str) -> None:
         """
-        Sets the Part geometry based on a mesh filename.The mes must have a compatible file that can be
+        Sets the Part geometry based on a mesh filename. The mesh must have a compatible file that can be
         imported via `trimesh`.
 
         :param filename: The mesh filename
@@ -303,6 +303,17 @@ class Part(DocumentObject):
          """
         self._geometry = mesh
         self._dirty = True
+
+    @property
+    def volume(self) -> float:
+        if not self.geometry.is_volume:
+            raise ValueError('Part is not a valid volume')
+
+        return self.geometry.volume
+
+    @property
+    def area(self) -> float:  # const
+        return self.geometry.area
 
     @property
     def geometry(self) -> trimesh.Trimesh:
@@ -344,7 +355,7 @@ class Part(DocumentObject):
         return self._partType
 
     def getVectorSlice(self, z: float, returnCoordPaths: bool = True,
-                       simplificationFactor = None, simplificationPreserveTopology: Optional[bool] = True) -> Any:
+                       simplificationFactor:bool = None, simplificationPreserveTopology: Optional[bool] = True) -> Any:
         """
         The vector slice is created by using `trimesh` to slice the mesh into a polygon
 
