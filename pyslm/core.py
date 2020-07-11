@@ -7,6 +7,7 @@ from typing import Any, List, Optional, Tuple
 
 from shapely.geometry import Polygon
 
+
 class DocumentObject(ABC):
 
     def __init__(self, name):
@@ -31,14 +32,11 @@ class DocumentObject(ABC):
     def name(self):
         return self._name
 
-        # Protected method for assigning the set of Feature Attributes performed in constructor
-
     def _setAttributes(self, attributes):
         self._attributes = attributes
 
     def setName(self, name):
         self._name = name
-
 
     def boundingBox(self):  # const
         raise NotImplementedError('Abstract  method should be implemented in derived class')
@@ -153,15 +151,17 @@ class Document:
 
 class Part(DocumentObject):
     """
-    Part is a solid geometry within the document object tree. Currently, this just represents a single part that
+    Part represents a solid geometry within the document object tree. Currently, this just represents a single part that
     will eventually be later sliced as part of a document tree structure.
 
     The part can be transformed and has a position (:attr:`~Part.origin`),
-    rotation (:attr:`~Part.rotation`)  and additional scale factor (:attr:`~Part.scaleFactor`), which are collectively
+    rotation (:attr:`~Part.rotation`) and additional scale factor (:attr:`~Part.scaleFactor`), which are collectively
     applied to the geometry in its local coordinate system :math:`(x,y,z)`. Changing the geometry using
     :meth:`~Part.setGeometryByMesh` or :meth:`~Part.setGeometry` along with any of the transformation attributes will set
     the part dirty and forcing the transformation and geometry to be re-computed on the next call in order to obtain
     the :attr:`Part.geometry`.
+
+    The part is currently based off a faceted mesh, internally building on capabilities of the Trimesh packages.
 
     Generally for AM and 3D printing the following function :meth:`~Part.getVectorSlice` is the most useful. This method
     provides the user with a slice for a given z-plane containing the boundaries consisting of a series of polygons.
@@ -169,6 +169,9 @@ class Part(DocumentObject):
     :class:`shapely.geometry.Polygon`. A bitmap slice can alternatively be obtained for certain AM process using
     :meth:`~Part.getBitmapSlice` in similar manner.
     """
+
+    _partType = 'Part'
+    """ The part type is a static class attribute used for classifying the part when used in the document tree. """
 
     def __init__(self, name):
 
@@ -178,8 +181,6 @@ class Part(DocumentObject):
         self._geometryCache = None
 
         self._bbox = np.zeros((1, 6))
-
-        self._partType = 'Undefined'
 
         self._rotation = np.array((0.0, 0.0, 0.0))
         self._scaleFactor = np.array((1.0, 1.0, 1.0))
@@ -347,7 +348,7 @@ class Part(DocumentObject):
     @property
     def partType(self) -> str:
         """
-        Returns the part type
+        Returns the Part type. This will be used in future for the document tree.
 
         :return: The part type
         """
@@ -409,7 +410,7 @@ class Part(DocumentObject):
     def path2DToPathList(self, shapes: List[Polygon]) -> List[np.ndarray]:
         """
         Returns the list of paths and coordinates from a cross-section (i.e. Trimesh Path2D). This is required to be
-        done for performing boolean operations and offsetting with the PyClipper package
+        done for performing boolean operations and offsetting with the internal PyClipper package.
 
         :param shapes: A list of :class:`shapely.geometry.Polygon` representing a cross-section or container of
                         closed polygons
@@ -429,12 +430,12 @@ class Part(DocumentObject):
 
     def getBitmapSlice(self, z: float, resolution: float,  origin: Optional = None) -> np.ndarray:
         """
-        Returns a bitmap (binary) image of the slice at position :math:`z` position. The resolution paramter
-        is used to control the size of the image returned.
+        Returns a bitmap (binary) image of the slice at position :math:`z` position. The resolution parameter
+        can change the required definition for rasterising the slice layer.
 
         :param z: The z-position to take the slice from
         :param resolution: The resolution of the bitmap to generate [pixels/length unit]
-        :param origin: The offset for (0,0) in the bitmap image - defaults to the bounding box minimumm(optional)
+        :param origin: The offset for (0,0) in the bitmap image - defaults to the bounding box minimum (optional)
 
         :return: A bitmap image for the current slice at position
         """
