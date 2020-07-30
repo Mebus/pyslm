@@ -175,7 +175,8 @@ class BaseHatcher(abc.ABC):
     def __str__(self):
         return 'BaseHatcher <{:s}>'.format(self.name)
 
-    def scaleToClipper(self, feature: Any):
+    @staticmethod
+    def scaleToClipper(feature: Any):
         """
         Transforms geometry created **to pyclipper**  by upscaling into the integer coordinates  **from** the original
         floating point coordinate system.
@@ -185,7 +186,8 @@ class BaseHatcher(abc.ABC):
         """
         return pyclipper.scale_to_clipper(feature, BaseHatcher.PYCLIPPER_SCALEFACTOR)
 
-    def scaleFromClipper(self, feature: Any):
+    @staticmethod
+    def scaleFromClipper(feature: Any):
         """
         Transforms geometry created **from pyclipper** upscaled integer coordinates back **to** the original
         floating point coordinate system.
@@ -194,6 +196,16 @@ class BaseHatcher(abc.ABC):
         :return: The scaled geometry
         """
         return pyclipper.scale_from_clipper(feature, BaseHatcher.PYCLIPPER_SCALEFACTOR)
+
+    @staticmethod
+    def clipperToHatchArray(coords: np.ndarray) -> np.ndarray:
+        """
+        A helper method which converts the raw polygon edge lists returned by pyclipper into a numpy array.
+
+        :param coords: The list of hatches generated from pyclipper
+        :return: The hatch coordinates transfromed into a (n x 2 x 3) numpy array.
+        """
+        return np.transpose(np.dstack(coords), axes=[2, 0, 1])
 
     @classmethod
     def error(cls) -> float:
@@ -226,11 +238,11 @@ class BaseHatcher(abc.ABC):
         """
         pc = pyclipper.PyclipperOffset()
 
-        clipperOffset = self.scaleToClipper(offset)
+        clipperOffset = BaseHatcher.scaleToClipper(offset)
 
         # Append the paths to libClipper offsetting algorithm
         for path in paths:
-            pc.AddPath(self.scaleToClipper(path),
+            pc.AddPath(BaseHatcher.scaleToClipper(path),
                        pyclipper.JT_ROUND,
                        pyclipper.ET_CLOSEDPOLYGON)
 
@@ -256,7 +268,7 @@ class BaseHatcher(abc.ABC):
         for path in paths:
             path.append(path[0])
 
-        paths = self.scaleFromClipper(paths)
+        paths = BaseHatcher.scaleFromClipper(paths)
 
         offsetPolys.append(paths)
 
@@ -306,7 +318,8 @@ class BaseHatcher(abc.ABC):
 
         return bbox
 
-    def clipLines(self, paths, lines):
+    @staticmethod
+    def clipLines(paths, lines):
         """
         This function clips a series of lines (hatches) across a closed polygon using pyclipper.
 
@@ -325,9 +338,8 @@ class BaseHatcher(abc.ABC):
         pc = pyclipper.Pyclipper()
 
         for path in paths:
-            coords = self.scaleToClipper(path)
             for boundary in path:
-                pc.AddPath(self.scaleToClipper(boundary), pyclipper.PT_CLIP, True)
+                pc.AddPath(BaseHatcher.scaleToClipper(boundary), pyclipper.PT_CLIP, True)
 
         #print('time to add polygon', time.time()-startTime, 's')
         startTime = time.time()
@@ -335,13 +347,12 @@ class BaseHatcher(abc.ABC):
         # Reshape line list to create n lines with 2 coords(x,y,z)
         lineList = lines.reshape(-1, 2, 3)
         lineList = tuple(map(tuple, lineList))
-        lineList = self.scaleToClipper(lineList)
+        lineList = BaseHatcher.scaleToClipper(lineList)
 
         pc.AddPaths(lineList, pyclipper.PT_SUBJECT, False)
 
         #print('time to add hatches', time.time() - startTime, 's')
         startTime = time.time()
-
 
         # Note open paths (lines) have to used PyClipper::Execute2 in order to perform trimming
         result = pc.Execute2(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
@@ -349,11 +360,10 @@ class BaseHatcher(abc.ABC):
         #print('time to clip hatches', time.time() - startTime, 's')
         startTime = time.time()
 
-
         # Cast from PolyNode Struct from the result into line paths since this is not a list
         lineOutput = pyclipper.PolyTreeToPaths(result)
 
-        return self.scaleFromClipper(lineOutput)
+        return BaseHatcher.scaleFromClipper(lineOutput)
 
     def generateHatching(self, paths, hatchSpacing: float, hatchAngle: float = 90.0) -> np.ndarray:
         """
@@ -403,15 +413,6 @@ class BaseHatcher(abc.ABC):
         coords = coords.T + np.hstack([bboxCentre, 0.0])
 
         return coords
-
-    def clipperToHatchArray(self, coords: np.ndarray) -> np.ndarray:
-        """
-        A helper method which converts the raw polygon edge lists returned by pyclipper into a numpy array.
-
-        :param coords: The list of hatches generated from pyclipper
-        :return: The hatch coordinates transfromed into a (n x 2 x 3) numpy array.
-        """
-        return np.transpose(np.dstack(coords), axes=[2, 0, 1])
 
     @abc.abstractmethod
     def hatch(self, boundaryFeature) -> Layer:
@@ -762,8 +763,7 @@ class Hatcher(BaseHatcher):
             # Merge the lines together
             if len(clippedPaths) > 0:
 
-
-                clippedLines = self.clipperToHatchArray(clippedPaths)
+                clippedLines = BaseHatcher.clipperToHatchArray(clippedPaths)
 
                 # Extract only x-y coordinates and sort based on the pseudo-order stored in the z component.
                 clippedLines = clippedLines[:, :, :3]
